@@ -1,5 +1,7 @@
 (() => {
   const messages={
+    '一覧の読み込みを待っています…':'Waiting for the timeline to load…',
+    'メニュー・確認画面を閉じると自動で続行します。':'Close the open menu or dialog to continue automatically.',
     '先頭の一覧が安定しないため停止しました。':'Stopped: the top of the timeline did not settle.',
     '投稿の削除メニュー':'the post deletion menu','削除確認ボタン':'the deletion confirmation button',
     '削除後の投稿の消失':'the post disappearing after deletion','リポスト解除メニュー':'the Undo repost menu','リポスト解除後の表示':'the display after undoing the repost',
@@ -64,6 +66,9 @@
     'ページまたはアカウントの変更を検出しました。停止します。':'Page or account change detected. Stopping.'
   };
   const patterns=[
+    [/^順次削除中: (\d+) 件・未確認 (\d+) 件$/,(_,done,skipped)=>'Deleting: '+done+' confirmed · '+skipped+' unconfirmed'],
+    [/^未確認の投稿を保留して続行します。未確認 (\d+) 件$/,(_,n)=>'Holding this item and continuing. '+n+' unconfirmed.'],
+    [/^削除確認 (\d+) 件・未確認 (\d+) 件。未確認の投稿は次回再確認してください。$/,(_,done,skipped)=>done+' confirmed · '+skipped+' unconfirmed. Recheck unconfirmed items next run.'],
     [/^(.+)を確認できず停止しました。開いているメニュー・確認画面を確認してください。$/,(_,phase)=>'Stopped: could not verify '+translate(phase)+'. Check any open menu or confirmation dialog.'],
     [/^最大(\d+)件を削除$/,(_,n)=>'Delete up to '+n+' items'],
     [/^順次削除中: (\d+) 件$/,(_,n)=>'Deleting progressively: '+n+' items'],

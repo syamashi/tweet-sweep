@@ -22,6 +22,8 @@ No Node.js or Chrome Web Store developer registration needed. Keep the extracted
 
 ## Limits
 
+- Response timeouts hold the current item as unconfirmed and continue with the next item. The same item is not clicked again in that run. Repeated failures trigger increasing waits (up to two minutes). Blocked menus/dialogs pause processing until cleared. Account changes, navigation, explicit Stop and unrecognized destructive dialogs still stop the run. Unconfirmed items remain on X if deletion failed; review them on a later run. JSON remains a simple date/text memo, not a deletion audit.
+
 - Processes only history X actually loads. All mode is not a guarantee of removing the entire account history.
 - Keep X visible for reliable operation. Chrome can throttle or suspend hidden tabs. The extension does not deliberately stop on visibility changes.
 - Navigation within the X tab, account changes, errors and the Stop button stop processing. Results are verified from the page, not an API.
