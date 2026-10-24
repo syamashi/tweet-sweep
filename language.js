@@ -1,5 +1,8 @@
 (() => {
   const messages={
+    '先頭の一覧が安定しないため停止しました。':'Stopped: the top of the timeline did not settle.',
+    '投稿の削除メニュー':'the post deletion menu','削除確認ボタン':'the deletion confirmation button',
+    '削除後の投稿の消失':'the post disappearing after deletion','リポスト解除メニュー':'the Undo repost menu','リポスト解除後の表示':'the display after undoing the repost',
     '画面の応答を確認できず停止しました。開いているメニュー・確認画面を確認してください。':'Stopped: could not verify the page response. Check any open menu or confirmation dialog.',
     'Xの応答を待っています…':'Waiting for X to respond…',
     'JSONを保存':'Save JSON',
@@ -61,6 +64,7 @@
     'ページまたはアカウントの変更を検出しました。停止します。':'Page or account change detected. Stopping.'
   };
   const patterns=[
+    [/^(.+)を確認できず停止しました。開いているメニュー・確認画面を確認してください。$/,(_,phase)=>'Stopped: could not verify '+translate(phase)+'. Check any open menu or confirmation dialog.'],
     [/^最大(\d+)件を削除$/,(_,n)=>'Delete up to '+n+' items'],
     [/^順次削除中: (\d+) 件$/,(_,n)=>'Deleting progressively: '+n+' items'],
     [/^対象: @(.+)$/,(_,a)=>'Account: @'+a],
