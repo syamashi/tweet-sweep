@@ -10,7 +10,7 @@
   #limit:disabled{background:#d9dde1;color:#737b83;border-color:#b9c0c7;cursor:not-allowed;opacity:1;-webkit-text-fill-color:#737b83}
   .display-warning{color:#b91c1c;background:#fff0f0;border:2px solid #dc2626;border-radius:8px;padding:12px;margin:12px 0;font-size:17px;font-weight:800;line-height:1.65}.display-warning p{margin:5px 0 0;font-size:15px}
   </style><section><header><h1>↗ Tweet Sweep</h1><button id="close" aria-label="閉じる">×</button></header><div class="muted">DELETE TWEETS FOR X · ツイート・ポストの一括削除</div>
-  <div class="display-warning" role="note"><strong>表示したままにしてください。</strong><p>タブの切り替えや最小化をすると停止します。</p></div>
+  <div class="display-warning" role="note"><strong>処理中はXのタブを表示してください。</strong><p>タブ切替・最小化で停止することがあります。</p></div>
   <div id="identity">自分のプロフィールを開いてください。</div><label><input id="all" type="checkbox" checked>∞ 全件</label><label>件数<input id="limit" type="number" min="1" step="1" value="20" disabled></label>
   <div class="row"><label><input id="posts" type="checkbox" checked>投稿・返信・引用</label><label><input id="reposts" type="checkbox" checked>リポスト</label></div>
   <div class="row"><button id="scan" class="primary">候補を読み込む</button><button id="stop" disabled>停止</button></div>

@@ -1,7 +1,7 @@
 (() => {
   const messages={
-    '表示したままにしてください。':'Keep this X tab visible.',
-    'タブの切り替えや最小化をすると停止します。':'Switching tabs or minimizing stops processing.',
+    '処理中はXのタブを表示してください。':'Keep this X tab visible.',
+    'タブ切替・最小化で停止することがあります。':'Switching tabs or minimizing may interrupt processing.',
     '∞ 全件':'∞ All','件数':'Item limit',
     '返信も含めるなら「返信」タブへ。対象はXで読み込めた範囲です。':'Use the Replies tab to include replies. Only loaded items are included.',
     '対象を確認しました（削除は取り消せません）':'I reviewed the items (deletion is permanent)',
@@ -9,7 +9,7 @@
     '保存は任意。バックグラウンドでも続行しますが、Chromeにより遅くなる場合があります。Xの非API自動化規則をご確認ください。':'Saving is optional. Background processing may be slower. Review X’s non-API automation rules.',
     'タブ切り替え・最小化でも続行します。バックグラウンドではChrome側の制御で遅くなる場合があります。Xタブ内のページ移動・再読み込み・アカウント変更・エラーでは停止します。結果は画面表示による確認です。':'Continues when you switch tabs or minimize. Chrome may slow background processing. Navigation within the X tab, reloading, account changes or errors stop processing. Results are verified through the page display.',
     '⚠ タブ切り替え・最小化で処理が停止します':'⚠ Switching tabs or minimizing stops processing',
-    '収集・削除中はXのタブを表示したままにしてください。停止後は自動再開しません。':'Keep the X tab visible while scanning or deleting. Processing does not resume automatically.',
+    '収集・削除中はXのタブを処理中はXのタブを表示してください。停止後は自動再開しません。':'Keep the X tab visible while scanning or deleting. Processing does not resume automatically.',
     '⚠ 実行中はこのXタブを開いたままにしてください':'⚠ Keep this X tab visible while running',
     '別タブへの切り替え・ウィンドウの最小化で停止します。再開には、戻って再操作が必要です。':'Switching tabs or minimizing the window stops processing. Return to this tab and restart manually.',
     '閉じる':'Close','パネルを折りたたむ／開く':'Collapse / expand panel',
@@ -30,7 +30,7 @@
     '1件ごとにXの確認画面で自分で確定する':'Confirm each item myself on X',
     'チェックを外すと、今回の候補すべての削除確定も自動操作します。':'Uncheck to automatically confirm deletion for all candidates in this run.',
     '開始':'Start','戻る':'Back','削除はまだ実行していません。':'No deletions have been performed.',
-    '停止・エラー・ページ移動時は自動再開しません。処理中はこのタブを表示したままにしてください。結果の「画面で消失を確認」はAPIによる確認ではありません。':'No automatic restart after stopping, errors or navigation. Keep this tab visible. Disappearance from the page is not API verification.',
+    '停止・エラー・ページ移動時は自動再開しません。処理中はこのタブを処理中はXのタブを表示してください。結果の「画面で消失を確認」はAPIによる確認ではありません。':'No automatic restart after stopping, errors or navigation. Keep this tab visible. Disappearance from the page is not API verification.',
     '(本文なし・メディア投稿)':'(No text / media post)','投稿・返信':'Posts / replies','削除候補はありません。':'No candidates.',
     '停止しました。':'Stopped.','タブが非表示になったため停止しました。':'Stopped because the tab is hidden.',
     'ページまたはアカウントが変わったため停止しました。':'Stopped because the page or account changed.',
