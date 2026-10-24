@@ -18,7 +18,7 @@ No Node.js or Chrome Web Store developer registration needed. Keep the extracted
 1. Confirm the displayed account and item types. **∞ All** is the default; uncheck it to enter a count. Use X's **Replies** tab to include replies.
 2. Check the acknowledgment, then click **Delete**. There is no preview or second confirmation. Deletion is permanent.
 3. Each post is read, recorded and deleted sequentially before moving to the next. **Stop** stops further operations.
-4. **Save JSON** exports the text, ID, URL, date and per-item results, after completion, stop or error. Saving is disabled while processing. Export before closing or reloading the tab: records are held in memory, not automatically written to disk. Media files are not included.
+4. **Save JSON** exports only the original post date and text, after completion, stop or error. Saving is disabled while processing. Export before closing or reloading the tab: records include attempted items even if deletion was not confirmed and are held in memory, not automatically written to disk. Media files are not included.
 
 ## Limits
 
@@ -44,8 +44,8 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 
 - 全件が初期設定です。チェックを外すと件数を入力できます。返信も含める場合はXの「返信」タブを開きます。
 - アカウントと対象を確認してチェックを入れ、「削除する」を押します。候補の事前読み込みや二段階の確認はありません。削除は取り消せません。
-- 1件ずつ読み込み、削除前の本文・ID・URL・日時を記録して削除します。その都度、結果を追加します。
-- 「JSONを保存」は終了・停止・エラー後に使えます。処理中は無効です。記録はタブのメモリに保持します。ファイルへの自動追記ではないため、閉じる・再読み込みの前に保存してください。画像・動画原本は含みません。
+- 1件ずつ読み込み、削除前の投稿日時と本文を記録して削除します。JSONにはdateとtextだけを保存します。
+- 「JSONを保存」は終了・停止・エラー後に使えます。処理中は無効です。削除を確認できなかった投稿も、読み取ったメモとして含まれます。記録はタブのメモリに保持します。ファイルへの自動追記ではないため、閉じる・再読み込みの前に保存してください。画像・動画原本は含みません。
 - Xが表示できた範囲だけが対象です。非API自動化に関するXの規則と、アカウント制限のリスクをご確認ください。
 
 ## Development

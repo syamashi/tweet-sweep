@@ -51,7 +51,7 @@
   function serial(p){const {node,...rest}=p;return rest;}
   function trusted(id,handler){$(id).addEventListener('click',e=>{if(e.isTrusted)handler(e);});}
   trusted('close',()=>{host.hidden=true;});
-  trusted('backup',()=>{if(busy||!archive.size)return;save('tweet-sweep-posts-'+Date.now()+'.json',{account:jobSelf||validPage(),page:jobLocation||location.href,createdAt:new Date().toISOString(),posts:[...archive.values()].map(p=>({...p})),results:results.map(r=>({...r}))});});
+  trusted('backup',()=>{if(busy||!archive.size)return;save('tweet-sweep-posts-'+Date.now()+'.json',[...archive.values()].map(({date,text})=>({date,text})));});
   for(const id of ['all','limit','posts','reposts'])$(id).addEventListener('change',()=>{if(busy)return;$('ack').checked=false;render();});
   $('ack').addEventListener('change',render);
   trusted('stop',()=>{aborted=true;$('stop').disabled=true;status('停止要求を受け付けました。確定済みの削除は取り消せません。');});
