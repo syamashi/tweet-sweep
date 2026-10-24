@@ -1,5 +1,6 @@
 (() => {
   const messages={
+    'このアカウントの投稿を削除します（取り消し不可）':'Delete posts from this account (permanent)',
     'プレビュー':'Preview','投稿JSONを保存':'Save posts JSON',
     '候補を見る':'Preview candidates','読み込み不要。そのまま削除を開始できます。':'No preload needed. Start deleting directly.',
     '全件を順次削除':'Delete all progressively','追加の読み込みを待っています…':'Waiting for more items…',
