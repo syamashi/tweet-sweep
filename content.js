@@ -46,7 +46,7 @@
   function records(){const self=identity();return [...document.querySelectorAll('article[data-testid="tweet"]')].map(article=>record(article,self)).filter(Boolean);}
   function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=busy||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
   function timelineFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|')+'@'+Math.round(window.scrollY);}
-  async function waitFor(fn,timeout=7000){const end=Date.now()+timeout;while(Date.now()<end){guard();const value=fn();if(value)return value;await delay(150)}throw Error('画面の応答を確認できず停止しました。');}
+  async function waitFor(fn,timeout=30000){const started=Date.now(),end=started+timeout;let notified=false;while(Date.now()<end){guard();const value=fn();if(value)return value;if(!notified&&Date.now()-started>=7000){notified=true;status('Xの応答を待っています…');}await delay(150)}throw Error('画面の応答を確認できず停止しました。');}
   function save(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
   function serial(p){const {node,...rest}=p;return rest;}
   function trusted(id,handler){$(id).addEventListener('click',e=>{if(e.isTrusted)handler(e);});}

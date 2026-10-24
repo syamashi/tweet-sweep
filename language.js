@@ -1,5 +1,6 @@
 (() => {
   const messages={
+    'Xの応答を待っています…':'Waiting for X to respond…',
     'JSONを保存':'Save JSON',
     'このアカウントの投稿を削除します（取り消し不可）':'Delete posts from this account (permanent)',
     'プレビュー':'Preview','投稿JSONを保存':'Save posts JSON',
