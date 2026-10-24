@@ -1,5 +1,10 @@
 (() => {
   const messages={
+    '∞ 全件':'∞ All','件数':'Item limit',
+    '返信も含めるなら「返信」タブへ。対象はXで読み込めた範囲です。':'Use the Replies tab to include replies. Only loaded items are included.',
+    '対象を確認しました（削除は取り消せません）':'I reviewed the items (deletion is permanent)',
+    '削除する':'Delete','下の文字列を入力':'Type the phrase below','1件ずつ手動確認':'Confirm each item manually','待機中':'Ready','注意事項':'Notes',
+    '保存は任意。バックグラウンドでも続行しますが、Chromeにより遅くなる場合があります。Xの非API自動化規則をご確認ください。':'Saving is optional. Background processing may be slower. Review X’s non-API automation rules.',
     'タブ切り替え・最小化でも続行します。バックグラウンドではChrome側の制御で遅くなる場合があります。Xタブ内のページ移動・再読み込み・アカウント変更・エラーでは停止します。結果は画面表示による確認です。':'Continues when you switch tabs or minimize. Chrome may slow background processing. Navigation within the X tab, reloading, account changes or errors stop processing. Results are verified through the page display.',
     '⚠ タブ切り替え・最小化で処理が停止します':'⚠ Switching tabs or minimizing stops processing',
     '収集・削除中はXのタブを表示したままにしてください。停止後は自動再開しません。':'Keep the X tab visible while scanning or deleting. Processing does not resume automatically.',
