@@ -1,5 +1,9 @@
 (() => {
   const messages={
+    '⚠ タブ切り替え・最小化で処理が停止します':'⚠ Switching tabs or minimizing stops processing',
+    '収集・削除中はXのタブを表示したままにしてください。停止後は自動再開しません。':'Keep the X tab visible while scanning or deleting. Processing does not resume automatically.',
+    '⚠ 実行中はこのXタブを開いたままにしてください':'⚠ Keep this X tab visible while running',
+    '別タブへの切り替え・ウィンドウの最小化で停止します。再開には、戻って再操作が必要です。':'Switching tabs or minimizing the window stops processing. Return to this tab and restart manually.',
     '閉じる':'Close','パネルを折りたたむ／開く':'Collapse / expand panel',
     'DELETE TWEETS FOR X · ツイート・ポストの一括削除':'DELETE TWEETS FOR X · Bulk post cleanup',
     'X画面の削除操作を繰り返します。削除は元に戻せません。Xの非API自動化に関する規則と、アカウント制限のリスクを理解してご利用ください。':'Repeats deletion actions on the X website. Deletion is permanent. Review X’s rules on non-API automation and understand the risk of account restrictions.',
