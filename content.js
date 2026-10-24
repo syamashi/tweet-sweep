@@ -33,6 +33,7 @@
   function status(s){$('status').textContent=s;}
   function setBusy(value){busy=value;for(const id of ['all','limit','posts','reposts','ack'])$(id).disabled=value;$('limit').disabled=value||$('all').checked;$('stop').disabled=!value;$('close').disabled=value;render();}
   function record(article,self=identity()){
+    if(article.querySelector('[data-testid="tombstone"]'))return null;
     const ownTime=[...article.querySelectorAll('time')].find(t=>t.closest('article')===article);
     const link=ownTime?.closest('a[href]');const parsed=C.permalink(link?.getAttribute('href')||'');if(!parsed)return null;
     const social=article.querySelector('[data-testid="socialContext"]');
@@ -46,7 +47,7 @@
   function records(){const self=identity();return [...document.querySelectorAll('article[data-testid="tweet"]')].map(article=>record(article,self)).filter(Boolean);}
   function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=busy||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
   function timelineFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|')+'@'+Math.round(window.scrollY);}
-  async function waitFor(fn,timeout=30000){const started=Date.now(),end=started+timeout;let notified=false;while(Date.now()<end){guard();const value=fn();if(value)return value;if(!notified&&Date.now()-started>=7000){notified=true;status('Xの応答を待っています…');}await delay(150)}throw Error('画面の応答を確認できず停止しました。');}
+  async function waitFor(fn,timeout=30000){const started=Date.now(),end=started+timeout;let notified=false;while(Date.now()<end){guard();const value=fn();if(value)return value;if(!notified&&Date.now()-started>=7000){notified=true;status('Xの応答を待っています…');}await delay(150)}throw Error('画面の応答を確認できず停止しました。開いているメニュー・確認画面を確認してください。');}
   function save(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
   function serial(p){const {node,...rest}=p;return rest;}
   function trusted(id,handler){$(id).addEventListener('click',e=>{if(e.isTrusted)handler(e);});}
@@ -62,7 +63,7 @@
     guard();if(menus().length||hasConfirm())throw Error('既存のメニューや確認画面を閉じてから再開してください。');
     const current=await locate(candidate.id);guard();
     if(current.kind!==candidate.kind||current.author!==candidate.author)throw Error('投稿の種類が変化したため停止しました。');
-    current.node.scrollIntoView({block:'center'});await delay(300);guard();
+    current.node.scrollIntoView({block:'start'});await delay(300);guard();
     if(candidate.kind==='repost'){
       const undo=current.node.querySelector('[data-testid="unretweet"]');if(!visible(undo))throw Error('リポスト解除ボタンを確認できません。');undo.click();
       const item=await waitFor(()=>{const a=[...document.querySelectorAll('[data-testid="unretweetConfirm"]')].filter(visible);return a.length===1?a[0]:null;});
@@ -87,7 +88,7 @@
     if((scope.limit!==Infinity&&(!Number.isSafeInteger(scope.limit)||scope.limit<1))||(!scope.posts&&!scope.reposts))return;
     const manual=false;jobSelf=scope.self;jobLocation=scope.page;aborted=false;setBusy(true);$('progress').value=0;if(scope.limit===Infinity)$('progress').removeAttribute('value');else $('progress').max=scope.limit;let done=0,last='',stalls=0,retries=0;
     window.scrollTo(0,0);
-    try{while(done<scope.limit){guard();const p=records().find(p=>(p.kind==='repost'?scope.reposts:scope.posts)&&!results.some(r=>r.id===p.id&&r.ok));if(p){const data=serial(p);archive.set(p.id,data);const entry={...data,ok:false,state:'pending',startedAt:new Date().toISOString()};results.push(entry);render();status('順次削除中: '+done+' 件');try{Object.assign(entry,await deleteOne(p,manual),{state:'deleted'});done++;if(scope.limit!==Infinity)$('progress').value=done;stalls=0;last='';retries=0;render();}catch(e){Object.assign(entry,{state:'unconfirmed',error:e.message,at:new Date().toISOString()});throw e;}await delay(2000);continue;}const fingerprint=timelineFingerprint();stalls=fingerprint===last?stalls+1:0;last=fingerprint;if(stalls>=12){if(retries>=2)break;retries++;stalls=0;status('追加の読み込みを待っています…');window.scrollBy(0,-Math.max(300,innerHeight*.5));await delay(3000);window.scrollBy(0,Math.max(600,innerHeight));await delay(5000);continue;}window.scrollBy(0,Math.max(400,innerHeight*.75));await delay(1100);}status('今回の '+done+' 件を処理しました。結果を保存し、X上でも確認してください。');}
+    try{while(done<scope.limit){guard();const p=records().find(p=>(p.kind==='repost'?scope.reposts:scope.posts)&&!results.some(r=>r.id===p.id&&r.ok));if(p){const data=serial(p);archive.set(p.id,data);const entry={...data,ok:false,state:'pending',startedAt:new Date().toISOString()};results.push(entry);render();status('順次削除中: '+done+' 件');try{Object.assign(entry,await deleteOne(p,manual),{state:'deleted'});done++;window.scrollTo(0,0);await delay(900);guard();if(scope.limit!==Infinity)$('progress').value=done;stalls=0;last='';retries=0;render();}catch(e){Object.assign(entry,{state:'unconfirmed',error:e.message,at:new Date().toISOString()});throw e;}await delay(2000);continue;}const fingerprint=timelineFingerprint();stalls=fingerprint===last?stalls+1:0;last=fingerprint;if(stalls>=12){if(retries>=2)break;retries++;stalls=0;status('追加の読み込みを待っています…');window.scrollBy(0,-Math.max(300,innerHeight*.5));await delay(3000);window.scrollBy(0,Math.max(600,innerHeight));await delay(5000);continue;}window.scrollBy(0,Math.max(400,innerHeight*.75));await delay(1100);}status('今回の '+done+' 件を処理しました。結果を保存し、X上でも確認してください。');}
     catch(e){status(e.message+'\n今回の処理済み: '+done+' 件。未確認の投稿は削除済みと扱いません。');}
     finally{$('ack').checked=false;$('progress').max=Math.max(1,done);$('progress').value=done;setBusy(false);}
   });

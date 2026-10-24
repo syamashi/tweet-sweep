@@ -1,5 +1,6 @@
 (() => {
   const messages={
+    '画面の応答を確認できず停止しました。開いているメニュー・確認画面を確認してください。':'Stopped: could not verify the page response. Check any open menu or confirmation dialog.',
     'Xの応答を待っています…':'Waiting for X to respond…',
     'JSONを保存':'Save JSON',
     'このアカウントの投稿を削除します（取り消し不可）':'Delete posts from this account (permanent)',
