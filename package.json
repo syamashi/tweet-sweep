@@ -1,0 +1,7 @@
+{
+  "name":"tweet-sweep-personal-extension",
+  "version":"0.3.0",
+  "private":true,
+  "scripts":{"test":"node tests/test.cjs"},
+  "devDependencies":{"jsdom":"26.1.0"}
+}
