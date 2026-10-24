@@ -2,11 +2,11 @@
 
 **A free, open-source Chrome extension to bulk delete tweets, posts and replies, and undo reposts on X (Twitter).** No developer API key required. Preview candidates, choose a count or ∞ mode, stop at any time, and optionally export JSON. Includes **English / 日本語**, selected automatically and switchable in the panel.
 
-[Download v0.3.5](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
+[Download v0.3.6](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
 
 ## Install in Chrome
 
-1. Download `tweet-sweep-v0.3.5.zip` from Releases and extract it.
+1. Download `tweet-sweep-v0.3.6.zip` from Releases and extract it.
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Choose **Load unpacked**, then select the extracted folder containing `manifest.json`.
 4. Open your own profile on `https://x.com` and click the Tweet Sweep extension icon.

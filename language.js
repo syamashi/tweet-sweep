@@ -1,5 +1,7 @@
 (() => {
   const messages={
+    '表示したままにしてください。':'Keep this X tab visible.',
+    'タブの切り替えや最小化をすると停止します。':'Switching tabs or minimizing stops processing.',
     '∞ 全件':'∞ All','件数':'Item limit',
     '返信も含めるなら「返信」タブへ。対象はXで読み込めた範囲です。':'Use the Replies tab to include replies. Only loaded items are included.',
     '対象を確認しました（削除は取り消せません）':'I reviewed the items (deletion is permanent)',
