@@ -1,5 +1,6 @@
 (() => {
   const messages={
+    'タブ切り替え・最小化でも続行します。バックグラウンドではChrome側の制御で遅くなる場合があります。Xタブ内のページ移動・再読み込み・アカウント変更・エラーでは停止します。結果は画面表示による確認です。':'Continues when you switch tabs or minimize. Chrome may slow background processing. Navigation within the X tab, reloading, account changes or errors stop processing. Results are verified through the page display.',
     '⚠ タブ切り替え・最小化で処理が停止します':'⚠ Switching tabs or minimizing stops processing',
     '収集・削除中はXのタブを表示したままにしてください。停止後は自動再開しません。':'Keep the X tab visible while scanning or deleting. Processing does not resume automatically.',
     '⚠ 実行中はこのXタブを開いたままにしてください':'⚠ Keep this X tab visible while running',

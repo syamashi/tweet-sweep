@@ -2,11 +2,11 @@
 
 **A free, open-source Chrome extension to bulk delete tweets, posts and replies, and undo reposts on X (Twitter).** No developer API key required. Preview candidates, choose a count or ∞ mode, stop at any time, and optionally export JSON. Includes **English / 日本語**, selected automatically and switchable in the panel.
 
-[Download v0.3.2](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
+[Download v0.3.3](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
 
 ## Install in Chrome
 
-1. Download `tweet-sweep-v0.3.2.zip` from Releases and extract it.
+1. Download `tweet-sweep-v0.3.3.zip` from Releases and extract it.
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Choose **Load unpacked**, then select the extracted folder containing `manifest.json`.
 4. Open your own profile on `https://x.com` and click the Tweet Sweep extension icon.
@@ -80,7 +80,7 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 9. 手動方式ではXの確認画面で「削除」または「リポストを取り消す」を押してください。キャンセル・2分の待機・画面不一致では停止します。
 10. 終了後の「結果を保存」も任意です。残りは再度「候補を読み込む」から実行します。
 
-処理中はタブを表示したままにしてください。ページ移動、アカウント変更、タブ非表示、画面を識別できない場合は停止します。「停止」は次の操作を止めます。すでにXへ送信された削除は取り消せません。停止後にXの確認画面が残っていたら、キャンセルして閉じてください。
+タブ切り替え・最小化では停止しません。Chrome側の制御で処理が遅くなる場合があります。Xタブ内のページ移動・再読み込み、アカウント変更、画面を識別できない場合は停止します。「停止」は次の操作を止めます。すでにXへ送信された削除は取り消せません。停止後にXの確認画面が残っていたら、キャンセルして閉じてください。
 
 パネルがXの確認画面に重なる場合は、ヘッダーの「−」で折りたたんでください。「＋」で戻せます。拡張アイコンでもパネルの表示・非表示を切り替えられます。
 
