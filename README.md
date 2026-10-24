@@ -2,11 +2,11 @@
 
 **A free, open-source Chrome extension to bulk delete tweets, posts and replies, and undo reposts on X (Twitter).** No developer API key required. Preview candidates, choose a count or ∞ mode, stop at any time, and optionally export JSON. Includes **English / 日本語**, selected automatically and switchable in the panel.
 
-[Download v0.3.0](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
+[Download v0.3.1](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
 
 ## Install in Chrome
 
-1. Download `tweet-sweep-v0.3.0.zip` from Releases and extract it.
+1. Download `tweet-sweep-v0.3.1.zip` from Releases and extract it.
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Choose **Load unpacked**, then select the extracted folder containing `manifest.json`.
 4. Open your own profile on `https://x.com` and click the Tweet Sweep extension icon.
@@ -33,6 +33,10 @@ Run `npm ci` and `npm test` (Node.js required for development only). Tests use s
 ## 日本語
 
 X（旧Twitter）のツイート・ポスト・返信を一括削除する個人用Chrome拡張。リポスト解除、全件削除（∞）、件数指定、開始・停止に対応。APIキー不要、バックアップ保存は任意です。
+
+## v0.3.1 の変更
+
+- 一括削除時の確認も自動操作する設定を標準にしました。毎回の手動確認は、希望する場合だけチェックを付けて使います。開始前の対象アカウント確認は残ります。
 
 ## v0.3.0 の変更
 
@@ -72,7 +76,7 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 5. 対象の種類を選んで「候補を読み込む」を押します。先頭へ移動して対象を収集します。この時点では削除しません。
 6. 投稿本文・リンク・対象アカウントを確認します。「候補JSONを保存」は任意です。画像や動画の原本は保存されません。必要なら先にXの公式データアーカイブを取得してください。
 7. 内容確認のチェックを付け、「削除の最終確認へ」を押します。保存していなくても進めます。
-8. 表示された `DELETE @ユーザー名` を入力します。初期設定では **1件ごとにXの削除確認を自分で押す** 方式です。候補一式の削除確定も自動で行う場合は、そのチェックを外してから「開始」を押します。
+8. 表示された `DELETE @ユーザー名` を入力します。初期設定では **削除の確認も自動で押す** 方式です。手動確認を希望する場合はチェックを付けてください。候補一式の削除確定も自動で行う場合は、そのチェックを外してから「開始」を押します。
 9. 手動方式ではXの確認画面で「削除」または「リポストを取り消す」を押してください。キャンセル・2分の待機・画面不一致では停止します。
 10. 終了後の「結果を保存」も任意です。残りは再度「候補を読み込む」から実行します。
 

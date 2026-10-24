@@ -15,7 +15,7 @@
   <p class="muted">先頭からスクロールして収集します。全件モードは、読み込みが進まなくなるまで続けます。返信も含める場合は「返信」タブで実行してください。Xで表示できない履歴の取得は保証できません。</p>
   <h2>削除候補 <span id="count">0</span> 件</h2><div id="list">まだ読み込んでいません。</div><div class="row"><button id="backup" disabled>候補JSONを保存</button><button id="report" disabled>結果を保存</button></div>
   <p class="muted">JSON保存は任意です。保存しなくても削除できます。</p><label><input id="ack" type="checkbox">対象を確認し、削除を取り消せないことを理解しました</label><button id="review" class="danger" disabled>削除の最終確認へ</button>
-  <div id="confirmbox" hidden><strong>対象アカウントを確認</strong><p id="phrase"></p><input id="confirm" type="text" autocomplete="off" placeholder="上の文字列を入力"><label><input id="each" type="checkbox" checked>1件ごとにXの確認画面で自分で確定する</label><p class="muted">チェックを外すと、今回の候補すべての削除確定も自動操作します。</p><button id="start" class="danger" disabled>開始</button><button id="cancel">戻る</button></div>
+  <div id="confirmbox" hidden><strong>対象アカウントを確認</strong><p id="phrase"></p><input id="confirm" type="text" autocomplete="off" placeholder="上の文字列を入力"><label><input id="each" type="checkbox">1件ごとにXの確認画面で自分で確定する</label><p class="muted">チェックを外すと、今回の候補すべての削除確定も自動操作します。</p><button id="start" class="danger" disabled>開始</button><button id="cancel">戻る</button></div>
   <progress id="progress" max="1" value="0"></progress><div id="status" role="status">削除はまだ実行していません。</div><p class="muted">停止・エラー・ページ移動時は自動再開しません。処理中はこのタブを表示したままにしてください。結果の「画面で消失を確認」はAPIによる確認ではありません。</p></section>`;
   document.documentElement.append(host);
   const minimize=document.createElement('button');
