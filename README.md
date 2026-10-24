@@ -2,11 +2,11 @@
 
 **A free, open-source Chrome extension to bulk delete tweets, posts and replies, and undo reposts on X (Twitter).** No developer API key required. Preview candidates, choose a count or ∞ mode, stop at any time, and optionally export JSON. Includes **English / 日本語**, selected automatically and switchable in the panel.
 
-[Download v0.3.7](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
+[Download v0.4.0](https://github.com/syamashi/tweet-sweep/releases/latest) · [日本語の導入手順](#インストール) · [Privacy](PRIVACY.md)
 
 ## Install in Chrome
 
-1. Download `tweet-sweep-v0.3.7.zip` from Releases and extract it.
+1. Download `tweet-sweep-v0.4.0.zip` from Releases and extract it.
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Choose **Load unpacked**, then select the extracted folder containing `manifest.json`.
 4. Open your own profile on `https://x.com` and click the Tweet Sweep extension icon.
@@ -15,6 +15,9 @@
 No Node.js installation or Chrome Web Store developer registration is needed to use this unpacked extension. Keep the extracted folder in place. After updates, reload the extension and the X tab.
 
 ## Features and limits
+
+- Start directly: the extension reads and deletes progressively. Preloading candidates is optional. The initial confirmation covers the selected account, item types and count (or all loaded history).
+- Each item's text, ID, link and timestamp are captured before deletion. JSON results are updated through pending, deleted or unconfirmed states. You can export a snapshot while processing. Data is held in tab memory, not automatically appended to a disk file; export before closing/reloading. Images and video files are not included.
 
 - Bulk delete your own posts, replies and quotes; undo identifiable reposts.
 - ∞ mode removes the tool’s item cap; it only covers history X actually loads. It does **not** guarantee deletion of your entire account history.
@@ -31,6 +34,14 @@ Searching for “delete tweets”, “Twitter bulk delete”, or an alternative 
 Run `npm ci` and `npm test` (Node.js required for development only). Tests use simulated DOM fixtures and never delete real posts. Licensed under MIT. Bug reports: [GitHub Issues](https://github.com/syamashi/tweet-sweep/issues).
 
 ## 日本語
+
+## v0.4.0 の変更
+
+- 全件の事前読み込みを廃止。「削除する」から、読み込みと削除を順番に繰り返します。「候補を見る」は任意のプレビューです。
+- 最初の確認で、対象アカウント・投稿の種類・件数または全件を指定します。確認した範囲内で、後から読み込んだ投稿も順次処理します。
+- 投稿の本文・ID・URL・日時を削除前に記録し、処理結果を逐次更新します。「投稿JSONを保存」は実行中でも利用できます。
+- JSONはタブのメモリに蓄積します。PCのファイルへ自動追記する方式ではありません。再読み込み・タブを閉じる前に保存してください。画像・動画の原本は含みません。
+- 読み込みが止まると待機・再スクロールを2回試します。Xが表示しない履歴の取得は保証しません。
 
 X（旧Twitter）のツイート・ポスト・返信を一括削除する個人用Chrome拡張。リポスト解除、全件削除（∞）、件数指定、開始・停止に対応。APIキー不要、バックアップ保存は任意です。
 
@@ -50,7 +61,7 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 
 - 「∞ 全件を対象にする」を追加。件数の500件上限、収集の60回スクロール上限、投稿再表示の65回上限を廃止しました。件数指定の場合も500件を超える整数を指定できます。
 - 全件モードでは、画面上の投稿とスクロール位置に変化がない状態が12回続くまで候補を収集します。Xが途中で読み込みを止める可能性があるため、全履歴取得の保証ではありません。
-- 削除は読み込んだ候補を対象にします。候補確認後に新しく投稿されたものなどを無確認で追加削除しません。返信を含める場合はプロフィールの「返信」タブで収集してください。
+- v0.2.0では読み込んだ候補だけを処理していました。v0.4.0以降は、開始時に確認した対象範囲で順次読み込み・削除します。返信を含める場合はプロフィールの「返信」タブを使ってください。
 - JSON保存は完全に任意です。保存なしで最終確認・実行できます。削除の不可逆性とアカウントの確認は残しています。
 - 表示名を Post Clear から **Tweet Sweep — Delete Tweets for X** に変更しました。同じフォルダから更新できます。
 
@@ -77,9 +88,9 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 2. **返信も整理したい場合はプロフィールの「返信」タブを開いてください。** 投稿タブだけでは返信を網羅できません。メディアタブでも実行できます。
 3. 拡張アイコンを押して右側のパネルを開きます。他の自動削除拡張は停止してください。
 4. 最初は最大件数を **1** に設定してください。全件を対象にする場合は「∞ 全件を対象にする」を選びます。1日50件などの製品側の回数制限はありません。
-5. 対象の種類を選んで「候補を読み込む」を押します。先頭へ移動して対象を収集します。この時点では削除しません。
-6. 投稿本文・リンク・対象アカウントを確認します。「候補JSONを保存」は任意です。画像や動画の原本は保存されません。必要なら先にXの公式データアーカイブを取得してください。
-7. 内容確認のチェックを付け、「削除の最終確認へ」を押します。保存していなくても進めます。
+5. 対象の種類とアカウントを確認します。「候補を見る」は任意です。全件を先に読み込む必要はありません。
+6. 内容確認のチェックを付け、「削除する」を押します。保存していなくても進めます。
+7. 開始後は投稿の読み込み・記録・削除を順次繰り返します。「投稿JSONを保存」で、それまでの投稿と処理結果を保存できます。画像や動画の原本は含みません。
 8. 表示された `DELETE @ユーザー名` を入力します。初期設定では **削除の確認も自動で押す** 方式です。手動確認を希望する場合はチェックを付けてください。候補一式の削除確定も自動で行う場合は、そのチェックを外してから「開始」を押します。
 9. 手動方式ではXの確認画面で「削除」または「リポストを取り消す」を押してください。キャンセル・2分の待機・画面不一致では停止します。
 10. 終了後の「結果を保存」も任意です。残りは再度「候補を読み込む」から実行します。

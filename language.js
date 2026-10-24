@@ -1,5 +1,8 @@
 (() => {
   const messages={
+    'プレビュー':'Preview','投稿JSONを保存':'Save posts JSON',
+    '候補を見る':'Preview candidates','読み込み不要。そのまま削除を開始できます。':'No preload needed. Start deleting directly.',
+    '全件を順次削除':'Delete all progressively','追加の読み込みを待っています…':'Waiting for more items…',
     '処理中はXのタブを表示してください。':'Keep this X tab visible.',
     'タブ切替・最小化で停止することがあります。':'Switching tabs or minimizing may interrupt processing.',
     '∞ 全件':'∞ All','件数':'Item limit',
@@ -54,6 +57,8 @@
     'ページまたはアカウントの変更を検出しました。停止します。':'Page or account change detected. Stopping.'
   };
   const patterns=[
+    [/^最大(\d+)件を削除$/,(_,n)=>'Delete up to '+n+' items'],
+    [/^順次削除中: (\d+) 件$/,(_,n)=>'Deleting progressively: '+n+' items'],
     [/^対象: @(.+)$/,(_,a)=>'Account: @'+a],
     [/^先頭100件を表示。処理対象は (\d+) 件です。$/,(_,n)=>'Showing the first 100. All '+n+' candidates are included.'],
     [/^候補を収集中: (\d+) 件 \/ (∞|上限 \d+) · スクロール (\d+)$/,(_,n,l,s)=>'Collecting: '+n+' / '+l.replace('上限 ','limit ')+' · scroll '+s],
