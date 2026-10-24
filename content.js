@@ -16,7 +16,7 @@
   <p class="muted">返信も含めるなら「返信」タブへ。対象はXで読み込めた範囲です。</p>
   <label><input id="ack" type="checkbox">このアカウントの投稿を削除します（取り消し不可）</label>
   <div class="row"><button id="start" class="danger" disabled>削除する</button><button id="stop" disabled>停止</button></div>
-  <div class="row" style="margin-top:10px"><button id="backup" disabled>投稿JSONを保存</button><button id="report" disabled>結果を保存</button></div>
+  <div class="row" style="margin-top:10px"><button id="backup" disabled>JSONを保存</button></div>
   <progress id="progress" max="1" value="0"></progress><div id="status" role="status">待機中</div><details class="muted"><summary>注意事項</summary>保存は任意。バックグラウンドでも続行しますが、Chromeにより遅くなる場合があります。Xの非API自動化規則をご確認ください。</details></section>`;
   document.documentElement.append(host);
   const minimize=document.createElement('button');
@@ -44,15 +44,14 @@
     return {...parsed,kind,text:primaryText?.textContent||'(本文なし・メディア投稿)',date:ownTime.getAttribute('datetime')||'',node:article};
   }
   function records(){const self=identity();return [...document.querySelectorAll('article[data-testid="tweet"]')].map(article=>record(article,self)).filter(Boolean);}
-  function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=!archive.size;$('report').disabled=!results.length;$('start').disabled=busy||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
+  function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=busy||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
   function timelineFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|')+'@'+Math.round(window.scrollY);}
   async function waitFor(fn,timeout=7000){const end=Date.now()+timeout;while(Date.now()<end){guard();const value=fn();if(value)return value;await delay(150)}throw Error('画面の応答を確認できず停止しました。');}
   function save(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
   function serial(p){const {node,...rest}=p;return rest;}
   function trusted(id,handler){$(id).addEventListener('click',e=>{if(e.isTrusted)handler(e);});}
   trusted('close',()=>{host.hidden=true;});
-  trusted('backup',()=>save('tweet-sweep-posts-'+Date.now()+'.json',{account:jobSelf||validPage(),page:jobLocation||location.href,createdAt:new Date().toISOString(),posts:[...archive.values()].map(p=>({...p})),results:results.map(r=>({...r}))}));
-  trusted('report',()=>save('tweet-sweep-results-'+Date.now()+'.json',results));
+  trusted('backup',()=>{if(busy||!archive.size)return;save('tweet-sweep-posts-'+Date.now()+'.json',{account:jobSelf||validPage(),page:jobLocation||location.href,createdAt:new Date().toISOString(),posts:[...archive.values()].map(p=>({...p})),results:results.map(r=>({...r}))});});
   for(const id of ['all','limit','posts','reposts'])$(id).addEventListener('change',()=>{if(busy)return;$('ack').checked=false;render();});
   $('ack').addEventListener('change',render);
   trusted('stop',()=>{aborted=true;$('stop').disabled=true;status('停止要求を受け付けました。確定済みの削除は取り消せません。');});

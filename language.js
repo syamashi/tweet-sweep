@@ -1,5 +1,6 @@
 (() => {
   const messages={
+    'JSONを保存':'Save JSON',
     'このアカウントの投稿を削除します（取り消し不可）':'Delete posts from this account (permanent)',
     'プレビュー':'Preview','投稿JSONを保存':'Save posts JSON',
     '候補を見る':'Preview candidates','読み込み不要。そのまま削除を開始できます。':'No preload needed. Start deleting directly.',
