@@ -19,7 +19,7 @@ No Node.js or Chrome Web Store developer registration needed. Keep the extracted
 
 1. Confirm the displayed account and item types. **∞ All** is the default; uncheck it to enter a count. Use X's **Replies** tab to include replies.
 2. Check the acknowledgment, then click **Delete**. There is no preview or second confirmation. Deletion is permanent.
-3. Each post is read, recorded and deleted sequentially before moving to the next. **Stop** stops further operations.
+3. Confirmed counts accumulate across restarts in the same tab; a specified count applies to each run. Reloading clears the in-memory totals. Each post is read, recorded and deleted sequentially before moving to the next. **Stop** stops further operations.
 4. **Save JSON** exports only the original post date and text, after completion, stop or error. Saving is disabled while processing. Export before closing or reloading the tab: records include attempted items even if deletion was not confirmed and are held in memory, not automatically written to disk. Media files are not included.
 
 ## Limits
@@ -48,6 +48,7 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 
 ### 操作
 
+- 同じタブでの再開は件数を累積表示します。件数指定は今回の実行分です。再読み込みで記録と累計は消えます。
 - 全件が初期設定です。チェックを外すと件数を入力できます。返信も含める場合はXの「返信」タブを開きます。
 - アカウントと対象を確認してチェックを入れ、「削除する」を押します。候補の事前読み込みや二段階の確認はありません。削除は取り消せません。
 - 1件ずつ読み込み、削除前の投稿日時と本文を記録して削除します。JSONにはdateとtextだけを保存します。

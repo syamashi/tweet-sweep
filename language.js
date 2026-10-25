@@ -82,6 +82,7 @@
     [/^候補 (\d+) を再表示できず停止しました。$/,(_,id)=>'Stopped: could not redisplay candidate '+id+'.'],
     [/^(\d+) \/ (\d+) 件目を処理中…$/,(_,n,total)=>'Processing '+n+' / '+total+'…'],
     [/^今回の (\d+) 件を処理しました。結果を保存し、X上でも確認してください。$/,(_,n)=>'Processed '+n+' items. Optionally save results and verify on X.'],
+    [/^累計の削除確認: (\d+) 件。(.*)$/,(_,n,rest)=>'Total confirmed: '+n+'. '+translate(rest)],
     [/^今回の処理済み: (\d+) 件。(.*)$/,(_,n,rest)=>'Processed this run: '+n+'. '+translate(rest)],
     [/^(リポスト|投稿・返信) · (\d+)$/,(_,kind,id)=>(kind==='リポスト'?'Repost':'Post / reply')+' · '+id]
   ];
