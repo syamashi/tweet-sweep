@@ -1,11 +1,13 @@
 (() => {
   const messages={
     '削除':'Delete','フォロー':'Follow','間隔（秒）':'Interval (seconds)',
+    'いいねした人を順にフォロー。待ち時間に次の投稿を調べます。':'Follow people who liked your posts; scan more posts between follows.',
     '自分の投稿にいいねした人を順にフォロー。リストは保存されます。':'Follow people who liked your posts. The queue is saved.',
     'いいねした人を自動フォローします':'Automatically follow people who liked my posts',
     '開始・再開':'Start / resume','新しいリスト':'New queue',
     '専用のXタブで動作します。Xの制限・認証時は停止。PCのスリープ中は動きません。':'Runs in a dedicated X tab. Stops on X restrictions or verification. Pauses while the PC sleeps.',
     '開始します…':'Starting…','処理中…':'Processing…','完了しました。':'Complete.',
+    '次のフォローを待っています…':'Waiting for the next follow…',
     'Chromeが再起動されました。再開してください。':'Chrome restarted. Resume to continue.',
     '一覧の読み込みを待っています…':'Waiting for the timeline to load…',
     'メニュー・確認画面を閉じると自動で続行します。':'Close the open menu or dialog to continue automatically.',
