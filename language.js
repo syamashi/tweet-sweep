@@ -1,5 +1,12 @@
 (() => {
   const messages={
+    '削除':'Delete','フォロー':'Follow','間隔（秒）':'Interval (seconds)',
+    '自分の投稿にいいねした人を順にフォロー。リストは保存されます。':'Follow people who liked your posts. The queue is saved.',
+    'いいねした人を自動フォローします':'Automatically follow people who liked my posts',
+    '開始・再開':'Start / resume','新しいリスト':'New queue',
+    '専用のXタブで動作します。Xの制限・認証時は停止。PCのスリープ中は動きません。':'Runs in a dedicated X tab. Stops on X restrictions or verification. Pauses while the PC sleeps.',
+    '開始します…':'Starting…','処理中…':'Processing…','完了しました。':'Complete.',
+    'Chromeが再起動されました。再開してください。':'Chrome restarted. Resume to continue.',
     '一覧の読み込みを待っています…':'Waiting for the timeline to load…',
     'メニュー・確認画面を閉じると自動で続行します。':'Close the open menu or dialog to continue automatically.',
     '先頭の一覧が安定しないため停止しました。':'Stopped: the top of the timeline did not settle.',
@@ -66,6 +73,11 @@
     'ページまたはアカウントの変更を検出しました。停止します。':'Page or account change detected. Stopping.'
   };
   const patterns=[
+    [/^フォロー確認 (\d+) 人・待ち (\d+) 人$/,(_,done,pending)=>done+' follows confirmed · '+pending+' queued'],
+    [/^投稿 (\d+) 件を取得しました。$/,(_,n)=>'Collected '+n+' posts.'],
+    [/^いいねした人を取得中: (\d+) \/ (\d+) 投稿$/,(_,n,total)=>'Collecting people: '+n+' / '+total+' posts'],
+    [/^@([\w]+) をフォローしました$/,(_,name)=>'Followed @'+name],
+    [/^@([\w]+) はフォロー・申請済み$/,(_,name)=>'Already following or requested @'+name],
     [/^順次削除中: (\d+) 件・未確認 (\d+) 件$/,(_,done,skipped)=>'Deleting: '+done+' confirmed · '+skipped+' unconfirmed'],
     [/^未確認の投稿を保留して続行します。未確認 (\d+) 件$/,(_,n)=>'Holding this item and continuing. '+n+' unconfirmed.'],
     [/^削除確認 (\d+) 件・未確認 (\d+) 件。未確認の投稿は次回再確認してください。$/,(_,done,skipped)=>done+' confirmed · '+skipped+' unconfirmed. Recheck unconfirmed items next run.'],

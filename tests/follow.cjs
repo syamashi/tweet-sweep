@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {JSDOM}=require('jsdom');
+const worker=fs.readFileSync('follow-worker.js','utf8');
+function fixture(phase='likes',path='/tester/status/1/likes'){
+ const dom=new JSDOM('<a data-testid="AppTabBar_Profile_Link" href="/tester"></a><main></main>',{url:'https://x.com'+path,runScripts:'outside-only'});
+ const w=dom.window,job={account:'tester',running:true,token:'one',phase,queue:[{handle:'friend',state:'pending'}]};
+ w.chrome={storage:{local:{get:async()=>({followJob:job})}}};w.scrollTo=()=>{};w.scrollBy=()=>{};w.setTimeout=fn=>setTimeout(fn,0);
+ w.HTMLElement.prototype.getClientRects=function(){return this.isConnected?[{}]:[]};w.eval(worker);
+ return {w,job,main:w.document.querySelector('main'),close:()=>w.close(),run:()=>w.TweetSweepFollowStep(job)};
+}
+(async()=>{
+ let f=fixture();f.main.innerHTML='<div data-testid="UserCell"><a href="/friend">Friend</a><a href="/friend">@friend</a><button data-testid="12-follow">Follow</button></div><div data-testid="UserCell"><a href="/existing">Existing</a><button data-testid="13-unfollow">Following</button></div><div data-testid="UserCell"><a href="/tester">Me</a></div>';
+ f.main.innerHTML='<section aria-label="Timeline: Liked by">'+f.main.innerHTML+'</section><div data-testid="UserCell"><a href="/suggestion">Suggestion</a></div>';
+ let result=await f.run();assert.deepEqual(JSON.parse(JSON.stringify(result.items)),[{handle:'friend',state:'pending'},{handle:'existing',state:'existing'}]);f.close();
+ f=fixture('posts','/tester');f.main.innerHTML='<article data-testid="tweet"><a href="/tester/status/1"><time></time></a><article><a href="/other/status/9"><time></time></a></article></article><article data-testid="tweet"><a href="/other/status/2"><time></time></a></article>';result=await f.run();assert.equal(result.items.length,1);assert.equal(result.items[0].id,'1');f.close();
+ f=fixture('follow','/friend');f.main.innerHTML='<div data-testid="UserCell"><button data-testid="99-follow">Follow</button></div><button data-testid="12-follow">Follow</button>';let clicks=0;f.main.querySelector('[data-testid="12-follow"]').onclick=e=>{clicks++;e.currentTarget.dataset.testid='12-unfollow';e.currentTarget.textContent='Following';};result=await f.run();assert.equal(clicks,1);assert.equal(result.state,'followed');result=await f.run();assert.equal(clicks,1);assert.equal(result.state,'existing');f.close();
+ f=fixture('follow','/friend');f.main.innerHTML='<button data-testid="12-follow">Follow</button><div role="alert">You are unable to follow more people</div>';await assert.rejects(f.run(),/制限/);f.close();
+ f=fixture('follow','/friend');f.main.innerHTML='<button data-testid="12-follow">Follow</button>';f.job.running=false;await assert.rejects(f.run(),/停止/);f.close();
+ f=fixture('follow','/friend');f.main.innerHTML='<button data-testid="12-follow">Follow</button>';let ambiguous=0;f.main.querySelector('button').onclick=()=>ambiguous++;await assert.rejects(f.run(),/結果/);assert.equal(ambiguous,1);f.close();
+ f=fixture('follow','/friend');f.w.document.querySelector('a').href='/different';await assert.rejects(f.run(),/アカウント/);f.close();
+ console.log('PASS: liker deduplication, own posts, follow confirmation, existing skip, limits, stop, ambiguous result and account guard');
+})().catch(e=>{console.error(e);process.exitCode=1});

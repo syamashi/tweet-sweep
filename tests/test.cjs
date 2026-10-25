@@ -1,13 +1,13 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
-const core=fs.readFileSync('core.js','utf8'),content=fs.readFileSync('content.js','utf8'),language=fs.readFileSync('language.js','utf8');
+const core=fs.readFileSync('core.js','utf8'),content=fs.readFileSync('content.js','utf8'),language=fs.readFileSync('language.js','utf8'),follow=fs.readFileSync('follow.js','utf8');
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn){for(let i=0;i<2000;i++){if(fn())return;await pause(5)}throw Error('Fixture timeout');}
 function fixture({path='/tester',owner='tester',wrongDialog=false,uiLanguage='ja',preferences={}}={}){
  const dom=new JSDOM('<a data-testid="AppTabBar_Profile_Link" href="/'+owner+'"></a><main></main>',{url:'https://x.com'+path,runScripts:'outside-only',pretendToBeVisual:true});
  const w=dom.window;let panel,deleted=0;
- w.chrome={i18n:{getUILanguage:()=>uiLanguage},storage:{local:{get:async()=>({...preferences}),set:async values=>Object.assign(preferences,values)}}};
+ w.chrome={runtime:{sendMessage:async()=>({job:null})},i18n:{getUILanguage:()=>uiLanguage},storage:{onChanged:{addListener(){},removeListener(){}},local:{get:async()=>({...preferences}),set:async values=>Object.assign(preferences,values)}}};
  const attach=w.Element.prototype.attachShadow;w.Element.prototype.attachShadow=function(init){const r=attach.call(this,init);panel=r;return r;};
  w.HTMLElement.prototype.getClientRects=function(){return this.isConnected?[{width:1,height:1}]:[]};
  w.HTMLElement.prototype.scrollIntoView=()=>{};w.scrollTo=()=>{};w.scrollBy=()=>{};
@@ -22,14 +22,14 @@ function fixture({path='/tester',owner='tester',wrongDialog=false,uiLanguage='ja
    w.document.querySelector('main').append(a);return a;
  }
  // Only the fixture grants synthetic events user trust; shipped code always requires isTrusted.
- w.eval(core);w.eval(language);w.eval(content.replace('if(e.isTrusted)handler(e);','handler(e);'));
+ w.eval(core);w.eval(language);w.eval(follow.replaceAll('e.isTrusted','true'));w.eval(content.replace('if(e.isTrusted)handler(e);','handler(e);'));
  const $=id=>panel.getElementById(id);
  return {dom,w,$,article,exports,get deleted(){return deleted},close(){w.__postClear.dispose();w.close();}};
 }
 function approve(f){f.$('ack').checked=true;f.$('ack').dispatchEvent(new f.w.Event('change'));}
 async function run(f){f.$('start').click();await until(()=>f.$('stop').disabled);}
 (async()=>{
- let f=fixture();assert.equal(f.$('all').checked,true);assert.equal(f.$('limit').disabled,true);assert.equal(f.$('scan'),null);assert.equal(f.$('list'),null);assert.equal(f.$('confirm'),null);assert.equal(f.$('start').disabled,true);f.article('tester','1');f.$('start').click();await pause(10);assert.equal(f.deleted,0);approve(f);assert.equal(f.$('start').disabled,false);await run(f);assert.equal(f.deleted,1);f.close();console.log('PASS: checkbox gates single delete button, no preview or second confirmation');
+ let f=fixture();assert.ok(f.$('follow-panel'));assert.ok(f.$('follow-tab'));assert.equal(f.$('follow-start').disabled,true);f.$('follow-tab').click();assert.equal(f.$('follow-panel').hidden,false);assert.equal(f.$('delete-panel').hidden,true);f.$('delete-tab').click();assert.equal(f.$('delete-panel').hidden,false);assert.equal(f.$('all').checked,true);assert.equal(f.$('limit').disabled,true);assert.equal(f.$('scan'),null);assert.equal(f.$('list'),null);assert.equal(f.$('confirm'),null);assert.equal(f.$('start').disabled,true);f.article('tester','1');f.$('start').click();await pause(10);assert.equal(f.deleted,0);approve(f);assert.equal(f.$('start').disabled,false);await run(f);assert.equal(f.deleted,1);f.close();console.log('PASS: checkbox gates single delete button, no preview or second confirmation');
  f=fixture();f.$('all').checked=false;f.$('all').dispatchEvent(new f.w.Event('change'));assert.equal(f.$('limit').disabled,false);f.$('limit').value='1';f.article('tester','2');f.article('tester','3');approve(f);await run(f);assert.equal(f.deleted,1);assert.match(f.$('status').textContent,/削除確認 1 件/);approve(f);f.$('start').click();assert.match(f.$('status').textContent,/順次削除中: 1 件/);await until(()=>f.$('stop').disabled);assert.equal(f.deleted,2);assert.match(f.$('status').textContent,/削除確認 2 件/);f.$('backup').click();assert.equal(f.exports.at(-1).length,2);f.close();console.log('PASS: restart retains cumulative count and JSON while count limit remains per run');
  f=fixture();f.article('other','4');f.article('tester','5',{html:'original text'});f.article('other','6',{repost:true});approve(f);await run(f);assert.equal(f.deleted,2);f.$('backup').click();const data=f.exports.at(-1);assert.equal(data.length,2);assert.equal(data[0].text,'original text');assert.deepEqual(Object.keys(data[0]).sort(),['date','text']);assert.equal(f.w.document.querySelectorAll('article').length,1);f.close();console.log('PASS: own posts and reposts only; original text and per-item results in JSON');
  f=fixture();f.article('tester','7');let added=false;const ob=new f.w.MutationObserver(()=>{if(!added&&!f.w.document.querySelector('article')){added=true;f.article('tester','8');}});ob.observe(f.w.document.querySelector('main'),{childList:true});approve(f);await run(f);assert.equal(f.deleted,2);ob.disconnect();f.close();console.log('PASS: newly loaded items processed without preloading');

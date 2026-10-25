@@ -6,6 +6,10 @@ Free, open-source Chrome extension to bulk delete tweets, posts and replies, and
 
 If Tweet Sweep helped you, please consider [supporting development and maintenance](https://github.com/sponsors/syamashi?frequency=one-time).
 
+## Follow (experimental)
+
+Open your own profile or one of your posts, then choose **Follow** in the panel. Set the interval (default 60 seconds), check the acknowledgment and start. A dedicated X tab collects your loaded posts, scans their liker lists and follows queued people one at a time. Existing follows and requests are skipped. The queue stays in extension local storage; use **Start / resume** after stopping, or **New queue** to scan again. Keep the dedicated tab open. Restrictions, verification prompts and ambiguous results stop the job; intervals do not guarantee avoiding limits or compliance with X rules. Automated proactive following is prohibited by [X's rules](https://help.x.com/en/rules-and-policies/x-rules-and-best-practices). This feature has fixture tests only, and has not been verified on live X.
+
 ## Install
 
 1. Download the release ZIP and extract it.
@@ -38,6 +42,10 @@ No Node.js or Chrome Web Store developer registration needed. Keep the extracted
 X（旧Twitter）のツイート・ポスト・返信を一括削除する個人用Chrome拡張です。リポスト解除、全件・件数指定、停止、日英切り替えに対応します。
 
 気に入ったら、[開発・保守へのご支援](https://github.com/sponsors/syamashi?frequency=one-time)をお願いします。
+
+### フォロー（試験版）
+
+自分のプロフィールか投稿を開き、パネルの「フォロー」→同意チェック→「開始・再開」。専用タブで投稿・いいねした人を取得後、設定間隔（初期60秒）で順にフォローします。フォロー・申請済みは飛ばします。リストは保存され、停止後も再開できます。「新しいリスト」で再取得します。専用タブは開いたままにしてください。制限・認証・結果不明時は停止します。時間を空けてもXの規約に適合するわけではありません。全員の取得・動作は保証できず、実際のXでは未検証です。
 
 ### 導入
 

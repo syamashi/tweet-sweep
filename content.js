@@ -24,6 +24,7 @@
   root.querySelector('header').insertBefore(minimize,root.getElementById('close'));
   minimize.addEventListener('click',e=>{if(!e.isTrusted)return;const section=root.querySelector('section');const collapsed=section.dataset.collapsed!=='true';section.dataset.collapsed=String(collapsed);for(const child of section.children)if(child.tagName!=='HEADER')child.style.display=collapsed?'none':'';minimize.textContent=collapsed?'＋':'−';});
   const $=id=>root.getElementById(id);
+  let follow=null;
   let results=[],archive=new Map(),busy=false,aborted=false,jobLocation='',jobSelf='';
   const delay=ms=>new Promise(r=>setTimeout(r,ms));
   const visible=e=>!!e&&e.isConnected&&e.getClientRects().length>0;
@@ -46,7 +47,7 @@
     return {...parsed,kind,text:primaryText?.textContent||'(本文なし・メディア投稿)',date:ownTime.getAttribute('datetime')||'',node:article};
   }
   function records(){const self=identity();return [...document.querySelectorAll('article[data-testid="tweet"]')].map(article=>record(article,self)).filter(Boolean);}
-  function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=busy||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
+  function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=busy||follow?.running||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
   function timelineFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|')+'@'+Math.round(window.scrollY);}
   async function waitFor(fn,timeout=30000,phase='画面応答'){const started=Date.now(),end=started+timeout;let notified=false;while(Date.now()<end){guard();const value=fn();if(value)return value;if(!notified&&Date.now()-started>=7000){notified=true;status('Xの応答を待っています…');}await delay(150)}const error=new Error(phase+'を確認できませんでした。');error.recoverable=true;throw error;}
   async function returnToTop(){let last='',stable=0;for(let i=0;i<50;i++){guard();window.scrollTo(0,0);await delay(300);guard();const fingerprint=timelineFingerprint(),loading=[...document.querySelectorAll('[role="progressbar"]')].some(visible);if(!loading&&Math.abs(window.scrollY)<3&&fingerprint===last)stable++;else stable=0;last=fingerprint;if(i>=6&&stable>=4)return;}throw Error('先頭の一覧が安定しないため停止しました。');}
@@ -111,6 +112,7 @@
   let lastIdlePage=location.href+'|'+identity();
   const timer=setInterval(()=>{if(busy&&(location.href!==jobLocation||identity()!==jobSelf)){aborted=true;status('ページまたはアカウントの変更を検出しました。停止します。');}if(!busy){const next=location.href+'|'+identity();if(next!==lastIdlePage){lastIdlePage=next;$('ack').checked=false;render();}}},1000);
   render();
+  follow=globalThis.TweetSweepFollow?.mount(root,{isDeleting:()=>busy,onChange:()=>render()});
   const language=globalThis.PostClearLanguage.mount(root);
-  globalThis.__postClear={toggle(){host.hidden=!host.hidden;},dispose(){aborted=true;clearInterval(timer);language.dispose();host.remove();}};
+  globalThis.__postClear={toggle(){host.hidden=!host.hidden;},dispose(){aborted=true;clearInterval(timer);language.dispose();follow?.dispose();host.remove();}};
 })();
