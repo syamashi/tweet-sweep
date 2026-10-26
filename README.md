@@ -28,6 +28,8 @@ No Node.js or Chrome Web Store developer registration needed. Keep the extracted
 
 ## Limits
 
+- If a previously confirmed post reappears as a live row, it is rechecked rather than skipped solely because of the old record. Counts are corrected, not double-counted. Rechecking old IDs does not reset the no-progress refresh limit.
+
 - Deletion continues near the current row instead of returning to the top after every item. Restarting in the same tab keeps the current position. If loading stalls, the extension saves a local checkpoint, reloads the same timeline and resumes only after verifying the same account and URL. Counts, remaining item limit, categories and JSON records carry over. After two refreshes without confirmed progress it stops. Stop, navigation, tab closure or a browser restart do not authorize auto-resume.
 
 - Response timeouts hold the current item as unconfirmed and continue with the next item. The same item is not clicked again in that run. Repeated failures trigger increasing waits (up to two minutes). Blocked menus/dialogs pause processing until cleared. Account changes, navigation, explicit Stop and unrecognized destructive dialogs still stop the run. Unconfirmed items remain on X if deletion failed; review them on a later run. JSON remains a simple date/text memo, not a deletion audit.
@@ -57,6 +59,8 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 4. Xで自分のプロフィールを開き、拡張アイコンを押します。通常のプロフィールでは「すべて」（`/all`）を標準で開きます。「返信」「メディア」の選択は維持します。
 
 ### 操作
+
+- 削除確認済みでも再び表示された投稿は再確認します。過去の記録だけで除外せず、重複カウントもしません。
 
 - 削除ごとに先頭へ戻らず、今の位置から続けます。同じタブでの再開も今の位置から。読み込みが止まると記録を保存し、同じ一覧を再読み込みして自動再開します。アカウント・URLを確認し、累計・残り件数・対象設定・JSON記録を引き継ぎます。進展なしの再読み込みは2回で停止します。停止・ページ移動・タブ終了・Chrome再起動では勝手に再開しません。
 

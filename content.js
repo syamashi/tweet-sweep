@@ -31,7 +31,7 @@
   function identity(){return C.account(document.querySelector('[data-testid="AppTabBar_Profile_Link"]')?.getAttribute('href')||'');}
   function validPage(){const self=identity(),route=location.pathname.match(/^\/([A-Za-z0-9_]{1,15})(?:\/(all|with_replies|media))?\/?$/);return self&&route&&route[1].toLowerCase()===self?self:null;}
   function guard(){if(aborted)throw Error('停止しました。');if(location.href!==jobLocation||identity()!==jobSelf||validPage()!==jobSelf)throw Error('ページまたはアカウントが変わったため停止しました。');}
-  function totals(self){const latest=new Map(),confirmed=new Set();for(const r of results){if(r.account!==self)continue;latest.set(r.id,r);if(r.ok)confirmed.add(r.id);}return {done:confirmed.size,skipped:[...latest.values()].filter(r=>!confirmed.has(r.id)&&r.state==='unconfirmed').length};}
+  function totals(self){const latest=new Map(),confirmed=new Set();for(const r of results){if(r.account!==self)continue;latest.set(r.id,r);if(r.ok)confirmed.add(r.id);}return {done:confirmed.size,skipped:[...latest.values()].filter(r=>!confirmed.has(r.id)&&(r.state==='unconfirmed'||r.state==='reappeared')).length};}
   function status(s){$('status').textContent=s;}
   function setBusy(value){busy=value;for(const id of ['all','limit','posts','reposts','ack'])$(id).disabled=value;$('limit').disabled=value||$('all').checked;$('stop').disabled=!value;$('close').disabled=value;render();}
   function record(article,self=identity()){
@@ -50,6 +50,7 @@
   function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=restoring||busy||follow?.running||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
   function timelineFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|')+'@'+Math.round(window.scrollY);}
   async function waitFor(fn,timeout=30000,phase='画面応答'){const started=Date.now(),end=started+timeout;let notified=false;while(Date.now()<end){guard();const value=fn();if(value)return value;if(!notified&&Date.now()-started>=7000){notified=true;status('Xの応答を待っています…');}await delay(150)}const error=new Error(phase+'を確認できませんでした。');error.recoverable=true;throw error;}
+  async function waitForStableGone(test,phase){let absentSince=null;return waitFor(()=>{if(!test()){absentSince=null;return false;}if(absentSince===null)absentSince=Date.now();return Date.now()-absentSince>=600;},30000,phase);}
   async function returnToTop(){let last='',stable=0;for(let i=0;i<50;i++){guard();window.scrollTo(0,0);await delay(300);guard();const fingerprint=timelineFingerprint(),loading=[...document.querySelectorAll('[role="progressbar"]')].some(visible);if(!loading&&Math.abs(window.scrollY)<3&&fingerprint===last)stable++;else stable=0;last=fingerprint;if(i>=6&&stable>=4)return;}throw Error('先頭の一覧が安定しないため停止しました。');}
   async function settleCurrent(){let last='',stable=0;for(let i=0;i<20;i++){guard();await delay(300);const next=timelineFingerprint();if(next===last)stable++;else stable=0;last=next;if(i>=3&&stable>=3)return;}}
   function retryable(message){const error=Error(message);error.recoverable=true;return error;}
@@ -89,7 +90,7 @@
       const undo=current.node.querySelector('[data-testid="unretweet"]');if(!visible(undo))throw Error('リポスト解除ボタンを確認できません。');undo.click();
       const item=await waitFor(()=>{const a=[...document.querySelectorAll('[data-testid="unretweetConfirm"]')].filter(visible);return a.length===1?a[0]:null;},30000,'リポスト解除メニュー');
       if(manual){status('Xの「リポストを取り消す」を自分で押してください。\n'+candidate.id);await waitFor(()=>!visible(item)&&!records().find(p=>p.id===candidate.id&&p.kind==='repost'),120000);}
-      else{guard();item.click();await waitFor(()=>!visible(item)&&!records().find(p=>p.id===candidate.id&&p.kind==='repost'),30000,'リポスト解除後の表示');}
+      else{guard();item.click();await waitForStableGone(()=>!visible(item)&&!records().find(p=>p.id===candidate.id&&p.kind==='repost'),'リポスト解除後の表示');}
     }else{
       if(current.author!==jobSelf)throw Error('自分の投稿ではないため停止しました。');
       const caret=current.node.querySelector('[data-testid="caret"]');if(!visible(caret))throw Error('投稿メニューを確認できません。');caret.click();
@@ -99,7 +100,7 @@
       const sheet=confirm.closest('[role="alertdialog"], [role="dialog"], [data-testid="sheetDialog"]');
       if(!visible(confirm)||!sheet||!/(ポストを削除|ツイートを削除|Delete (post|Tweet)|Delete this post)/i.test(sheet.textContent))throw Error('投稿削除の確認画面を識別できず停止しました。');
       if(manual){status('Xの確認画面で「削除」を自分で押してください。\n'+candidate.id);await waitFor(()=>!visible(confirm)&&!records().find(p=>p.id===candidate.id),120000);}
-      else{guard();confirm.click();await waitFor(()=>!visible(confirm)&&!records().find(p=>p.id===candidate.id),30000,'削除後の投稿の消失');}
+      else{guard();confirm.click();await waitForStableGone(()=>!visible(confirm)&&!records().find(p=>p.id===candidate.id),'削除後の投稿の消失');}
     }
     guard();return {id:candidate.id,url:candidate.url,kind:candidate.kind,ok:true,evidence:'画面で対象の消失またはリポスト解除を確認',at:new Date().toISOString()};
   }
@@ -108,19 +109,27 @@
     const scope=resume?{...resume.scope,limit:resume.scope.limit===null?Infinity:resume.scope.limit}:{self:validPage(),page:location.href,limit:$('all').checked?Infinity:Number($('limit').value),posts:$('posts').checked,reposts:$('reposts').checked};
     if(scope.self!==validPage()||scope.page!==location.href)return;
     if((scope.limit!==Infinity&&(!Number.isSafeInteger(scope.limit)||scope.limit<1))||(!scope.posts&&!scope.reposts))return;
-    const manual=false;jobSelf=scope.self;jobLocation=scope.page;aborted=false;setBusy(true);$('progress').value=0;if(scope.limit===Infinity)$('progress').removeAttribute('value');else $('progress').max=scope.limit;let done=0,skipped=0,consecutive=0,last='',stalls=0,retries=0,exhausted=false;const attempted=new Set(resume?.attempted||[]),completed=new Set(results.filter(r=>r.ok&&r.account===scope.self).map(r=>r.id));
+    const manual=false;jobSelf=scope.self;jobLocation=scope.page;aborted=false;setBusy(true);$('progress').value=0;if(scope.limit===Infinity)$('progress').removeAttribute('value');else $('progress').max=scope.limit;let done=0,skipped=0,consecutive=0,last='',stalls=0,retries=0,exhausted=false,freshProgress=0;const previouslyRecorded=new Set(results.filter(r=>r.account===scope.self&&(r.ok||r.wasConfirmed)).map(r=>r.id));const attempted=new Set(resume?.attempted||[]),completed=new Set(results.filter(r=>r.ok&&r.account===scope.self).map(r=>r.id));
     status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');
     try{
       if(resume||!results.some(r=>r.account===scope.self))await ensureTop();else await settleCurrent();
       while(done+skipped<scope.limit){
         guard();
-        const p=records().find(p=>(p.kind==='repost'?scope.reposts:scope.posts)&&!completed.has(p.id)&&!attempted.has(p.id));
+        const loaded=records();
+        for(const live of loaded){
+          if(completed.has(live.id)&&!attempted.has(live.id)){
+            // A live row takes precedence over an old DOM-disappearance result.
+            for(const prior of results)if(prior.account===scope.self&&prior.id===live.id&&prior.ok){prior.ok=false;prior.wasConfirmed=true;prior.state='reappeared';}
+            completed.delete(live.id);
+          }
+        }
+        const p=loaded.find(p=>(p.kind==='repost'?scope.reposts:scope.posts)&&!completed.has(p.id)&&!attempted.has(p.id));
         if(p){
           attempted.add(p.id);const data=serial(p);archive.set(p.id,data);
           const entry={...data,account:scope.self,ok:false,state:'pending',startedAt:new Date().toISOString()};results.push(entry);render();
           status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');
           try{
-            Object.assign(entry,await deleteOne(p,manual),{state:'deleted'});done++;completed.add(p.id);consecutive=0;
+            Object.assign(entry,await deleteOne(p,manual),{state:'deleted'});done++;if(!previouslyRecorded.has(p.id))freshProgress++;completed.add(p.id);consecutive=0;
             status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');
             await settleCurrent();guard();if(scope.limit!==Infinity)$('progress').value=done+skipped;
             stalls=0;last='';retries=0;render();
@@ -143,7 +152,7 @@
         window.scrollBy(0,Math.max(400,innerHeight*.75));await delay(1100);
       }
       if(exhausted){
-        const refreshes=done>0?0:(resume?.refreshes||0);
+        const refreshes=freshProgress>0?0:(resume?.refreshes||0);
         if(refreshes<2){
           await clearTransientUi();guard();status('記録を保存して一覧を読み直します…');
           reloading=true;
@@ -163,7 +172,7 @@
         if(!disposed){$('ack').checked=false;$('progress').max=Math.max(1,done+skipped+(exhausted?1:0));$('progress').value=done+skipped;setBusy(false);}
       }
     }
-    function snapshot(refreshes){const owned=results.filter(r=>r.account===scope.self),ids=new Set(owned.map(r=>r.id));return {scope:{...scope,limit:scope.limit===Infinity?null:Math.max(0,scope.limit-done-skipped)},results:owned.map(({id,account,ok,state})=>({id,account,ok,state})),archive:[...archive.entries()].filter(([id])=>ids.has(id)).map(([id,{date,text}])=>[id,{date,text}]),attempted:[...attempted].filter(id=>!completed.has(id)),refreshes};}
+    function snapshot(refreshes){const owned=results.filter(r=>r.account===scope.self),ids=new Set(owned.map(r=>r.id));return {scope:{...scope,limit:scope.limit===Infinity?null:Math.max(0,scope.limit-done-skipped)},results:owned.map(({id,account,ok,state,wasConfirmed})=>({id,account,ok,state,...(wasConfirmed?{wasConfirmed:true}:{})})),archive:[...archive.entries()].filter(([id])=>ids.has(id)).map(([id,{date,text}])=>[id,{date,text}]),attempted:[...attempted].filter(id=>!completed.has(id)),refreshes};}
   }
   trusted('start',()=>runDeletion());
   window.addEventListener('beforeunload',e=>{if(busy&&!reloading){aborted=true;e.preventDefault();e.returnValue='';}});
