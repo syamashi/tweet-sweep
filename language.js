@@ -1,5 +1,8 @@
 (() => {
   const messages={
+    '投稿を調査中…':'Scanning posts…',
+    'フォローを確認中…':'Checking follow status…',
+    '追加候補を待っています。元のページを再確認します。':'Waiting for more people. The original source will be checked again.',
     'JSON保存は任意。読み込み停止時は記録を保存して一覧を読み直します。Xの非API自動化規則をご確認ください。':'JSON export is optional. If loading stalls, records are saved before refreshing the timeline. Review X’s non-API automation rules.',
     '記録を保存して一覧を読み直します…':'Saving records and refreshing the timeline…',
     '保存時とアカウント・ページが違うため再開しません。':'Not resumed: the account or page differs from the saved run.',
@@ -82,6 +85,8 @@
     'ページまたはアカウントの変更を検出しました。停止します。':'Page or account change detected. Stopping.'
   };
   const patterns=[
+    [/^次の処理まで (\d+) 秒$/,(_,n)=>'Next step in '+n+' seconds'],
+    [/^収集 (\d+) 人・フォロー確認 (\d+) 人・待ち (\d+) 人$/,(_,total,done,pending)=>total+' collected · '+done+' follows confirmed · '+pending+' queued'],
     [/^フォロー確認 (\d+) 人・待ち (\d+) 人$/,(_,done,pending)=>done+' follows confirmed · '+pending+' queued'],
     [/^投稿 (\d+) 件を取得しました。$/,(_,n)=>'Collected '+n+' posts.'],
     [/^いいねした人を取得中: (\d+) \/ (\d+) 投稿$/,(_,n,total)=>'Collecting people: '+n+' / '+total+' posts'],

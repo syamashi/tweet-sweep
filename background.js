@@ -33,9 +33,23 @@ chrome.action.onClicked.addListener(async tab => {
 
 const FOLLOW_ALARM='tweet-sweep-follow';
 let followTickBusy=false;
+let followWrites=Promise.resolve();
 const loadFollow=async()=>(await chrome.storage.local.get('followJob')).followJob;
-async function storeFollow(job){await chrome.storage.local.set({followJob:job});return job;}
-async function scheduleFollow(job,ms){job.nextAt=Date.now()+ms;await storeFollow(job);await chrome.alarms.create(FOLLOW_ALARM,{when:job.nextAt});}
+function withFollowWrite(write){const task=followWrites.then(write);followWrites=task.catch(()=>{});return task;}
+async function storeFollow(job,force=false){return withFollowWrite(async()=>{const current=await loadFollow();if(!force&&(!current||current.token!==job.token||(!current.running&&job.running)))return false;await chrome.storage.local.set({followJob:job});return true;});}
+async function scheduleFollow(job,ms){job.nextAt=Date.now()+ms;if(await storeFollow(job))await chrome.alarms.create(FOLLOW_ALARM,{when:job.nextAt});}
+async function rescanFollow(job){
+  const source=new URL(job.source);
+  if(source.origin!=='https://x.com'||!new RegExp('^/'+job.account+'(?:/(?:all|with_replies|media)|/status/[0-9]+)?/?$','i').test(source.pathname))throw Error('元の調査ページを確認できません。');
+  const noNew=job.queue.length===(job.cycleStartCount??-1);
+  job.cycleStartCount=job.queue.length;job.scanRounds=(job.scanRounds||0)+1;
+  job.phase=/\/status\/\d+\/?$/.test(new URL(job.source).pathname)?'likes':'posts';
+  job.postIndex=0;job.inFlight=false;
+  job.message='追加候補を待っています。元のページを再確認します。';
+  const tab=await chrome.tabs.get(job.tabId);if(!/^https:\/\/x\.com\//.test(tab.url||''))throw Error('専用のXタブが移動されました。');
+  if(tab.url!==job.source)await chrome.tabs.update(job.tabId,{url:job.source});
+  await scheduleFollow(job,noNew?300000:30000);
+}
 async function followTick(){
   if(followTickBusy){await chrome.alarms.create(FOLLOW_ALARM,{when:Date.now()+30000});return;}followTickBusy=true;
   let job;
@@ -49,10 +63,10 @@ async function followTick(){
       if(pending&&Date.now()>=(job.nextFollowAt||0))job.phase='follow';
       else if(job.postIndex<job.posts.length)job.phase='likes';
       else if(pending){job.message='次のフォローを待っています…';await scheduleFollow(job,Math.max(1000,job.nextFollowAt-Date.now()));return;}
-      else{job.running=false;job.inFlight=false;job.message='完了しました。';await chrome.alarms.clear(FOLLOW_ALARM);await storeFollow(job);return;}
+      else{await rescanFollow(job);return;}
     }
     // A watchdog stops on interruption rather than repeating an ambiguous action.
-    job.inFlight=true;job.message='処理中…';job.nextAt=Date.now()+420000;await storeFollow(job);await chrome.alarms.create(FOLLOW_ALARM,{when:job.nextAt});
+    job.inFlight=true;job.message=job.phase==='posts'?'投稿を調査中…':job.phase==='likes'?'いいねした人を取得中: '+(job.postIndex+1)+' / '+job.posts.length+' 投稿':'フォローを確認中…';job.nextAt=Date.now()+180000;if(!await storeFollow(job))return;await chrome.alarms.create(FOLLOW_ALARM,{when:job.nextAt});
     const tab=await chrome.tabs.get(job.tabId);
     if(!/^https:\/\/x\.com\//.test(tab.url||''))throw Error('専用のXタブが移動されました。');
     let url;
@@ -60,7 +74,7 @@ async function followTick(){
     else if(job.phase==='likes')url=job.posts[job.postIndex].url;
     if(job.phase==='follow'){
       const next=job.queue.find(p=>p.state==='pending');
-      if(!next){job.running=false;job.message='完了しました。';await chrome.alarms.clear(FOLLOW_ALARM);await storeFollow(job);return;}
+      if(!next){await rescanFollow(job);return;}
       url='https://x.com/'+next.handle;
     }
     if(tab.url!==url)await chrome.tabs.update(job.tabId,{url});
@@ -71,7 +85,7 @@ async function followTick(){
       await new Promise(r=>setTimeout(r,500));
     }
     if(!loaded)throw Error('Xのページの読み込みを確認できません。');
-    if(job.phase==='follow'){job.nextFollowAt=Date.now()+job.interval*1000;await storeFollow(job);}
+    if(job.phase==='follow'){job.nextFollowAt=Date.now()+job.interval*1000;if(!await storeFollow(job))return;}
     await chrome.scripting.executeScript({target:{tabId:job.tabId},files:['follow-worker.js']});
     const responses=await chrome.scripting.executeScript({target:{tabId:job.tabId},func:async data=>{
       try{return {ok:true,value:await globalThis.TweetSweepFollowStep(data)};}
@@ -83,8 +97,9 @@ async function followTick(){
     if(!response.ok)throw Error(response.error||'処理に失敗しました。');
     const result=response.value;if(!result)throw Error('処理結果が空でした。専用タブを確認してください。');
     if(job.phase==='posts'){
-      job.posts=result.items;job.postIndex=0;job.phase='likes';
-      if(!job.posts.length)throw Error('自分の投稿を取得できません。プロフィールを確認してください。');
+      const posts=new Map((job.posts||[]).map(p=>[p.id||p.url,p])),fresh=new Map();for(const post of result.items){const id=post.id||post.url;if(!posts.has(id))fresh.set(id,post);else posts.set(id,post);}
+      job.posts=[...fresh.values(),...posts.values()];job.postIndex=0;job.phase='likes';
+      if(!job.posts.length){await rescanFollow(job);return;}
       job.message='投稿 '+job.posts.length+' 件を取得しました。';
     }else if(job.phase==='likes'){
       const known=new Set(job.queue.map(p=>p.handle));for(const person of result.items)if(!known.has(person.handle)){known.add(person.handle);job.queue.push(person);}
@@ -96,7 +111,7 @@ async function followTick(){
     }
     job.inFlight=false;await scheduleFollow(job,1000);
   }catch(e){
-    const current=await loadFollow();if(job&&current?.token===job.token&&current.running){job.running=false;job.message=e.message;await storeFollow(job);await chrome.alarms.clear(FOLLOW_ALARM);}
+    const current=await loadFollow();if(job&&current?.token===job.token&&current.running){job.running=false;job.message=e.message;if(await storeFollow(job))await chrome.alarms.clear(FOLLOW_ALARM);}
   }finally{followTickBusy=false;}
 }
 chrome.alarms.onAlarm.addListener(alarm=>{if(alarm.name===FOLLOW_ALARM)followTick();});
@@ -105,8 +120,8 @@ chrome.runtime.onMessage.addListener((message,sender,respond)=>{
   if(!['follow-start','follow-stop','follow-reset'].includes(message?.type)||!sender.tab||!/^https:\/\/x\.com\//.test(sender.tab.url||''))return;
   (async()=>{
     let job=await loadFollow();
-    if(message.type==='follow-stop'){if(job){job.running=false;job.token=crypto.randomUUID();job.message='停止しました。';await storeFollow(job);}await chrome.alarms.clear(FOLLOW_ALARM);return {job};}
-    if(message.type==='follow-reset'){if(job?.running)throw Error('停止してからリストを作り直してください。');await chrome.storage.local.remove('followJob');return {job:null};}
+    if(message.type==='follow-stop'){job=await withFollowWrite(async()=>{const current=await loadFollow();if(current){current.running=false;current.token=crypto.randomUUID();current.message='停止しました。';await chrome.storage.local.set({followJob:current});}return current;});await chrome.alarms.clear(FOLLOW_ALARM);return {job};}
+    if(message.type==='follow-reset'){if(job?.running)throw Error('停止してからリストを作り直してください。');await withFollowWrite(()=>chrome.storage.local.remove('followJob'));return {job:null};}
     if(job?.running)return {job};
     const interval=Number(message.interval);if(!Number.isSafeInteger(interval)||interval<30||interval>86400)throw Error('間隔は30〜86400秒で入力してください。');
     const result=await chrome.scripting.executeScript({target:{tabId:sender.tab.id},func:()=>document.querySelector('[data-testid="AppTabBar_Profile_Link"]')?.getAttribute('href')});
@@ -123,6 +138,6 @@ chrome.runtime.onMessage.addListener((message,sender,respond)=>{
     // Keep the control panel in the original tab; navigation happens in a separate tab.
     let worker;try{if(job.tabId)worker=await chrome.tabs.get(job.tabId);}catch{}
     if(!worker||!/^https:\/\/x\.com\//.test(worker.url||''))worker=await chrome.tabs.create({url:job.source,active:true});
-    job.tabId=worker.id;await storeFollow(job);await chrome.alarms.create(FOLLOW_ALARM,{when:Date.now()+1000});return {job};
+    job.tabId=worker.id;await storeFollow(job,true);await chrome.alarms.create(FOLLOW_ALARM,{when:Date.now()+1000});return {job};
   })().then(respond,e=>respond({error:e.message}));return true;
 });

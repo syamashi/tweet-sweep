@@ -7,7 +7,7 @@
     const $=id=>root.getElementById(id);let job=null,disposed=false;
     function select(follow){if(isDeleting())return;deletion.hidden=follow;panel.hidden=!follow;$('delete-tab').setAttribute('aria-selected',String(!follow));$('follow-tab').setAttribute('aria-selected',String(follow));}
     tabs.addEventListener('click',e=>{if(e.isTrusted)select(e.target.id==='follow-tab');});
-    function render(){if(disposed)return;const running=!!job?.running;$('follow-start').disabled=running||!$('follow-ack').checked||isDeleting();$('follow-stop').disabled=!running;$('follow-reset').disabled=running;$('follow-interval').disabled=running;$('follow-ack').disabled=running;if(job){const queue=job.queue||[];$('follow-status').textContent=(job.message||'待機中')+'\nフォロー確認 '+queue.filter(x=>x.state==='followed').length+' 人・待ち '+queue.filter(x=>x.state==='pending').length+' 人';}}
+    function render(){if(disposed)return;const running=!!job?.running;$('follow-start').disabled=running||!$('follow-ack').checked||isDeleting();$('follow-stop').disabled=!running;$('follow-reset').disabled=running;$('follow-interval').disabled=running;$('follow-ack').disabled=running;if(job){const queue=job.queue||[];$('follow-status').textContent=(job.message||'待機中')+(!job.inFlight&&job.nextAt>Date.now()?'\n次の処理まで '+Math.ceil((job.nextAt-Date.now())/1000)+' 秒':'')+'\n収集 '+queue.length+' 人・フォロー確認 '+queue.filter(x=>x.state==='followed').length+' 人・待ち '+queue.filter(x=>x.state==='pending').length+' 人';}}
     async function send(type){try{const response=await chrome.runtime.sendMessage({type,interval:Number($('follow-interval').value)});if(response?.error)throw Error(response.error);job=response?.job||null;render();}catch(e){$('follow-status').textContent=e.message;}}
     $('follow-ack').addEventListener('change',render);
     $('follow-start').addEventListener('click',e=>{if(e.isTrusted&&!isDeleting()&&$('follow-ack').checked)send('follow-start');});
@@ -15,6 +15,7 @@
     $('follow-reset').addEventListener('click',e=>{if(e.isTrusted&&!job?.running)send('follow-reset');});
     const changed=(changes,area)=>{if(disposed)return;if(area==='local'&&changes.followJob){job=changes.followJob.newValue||null;render();onChange();}};chrome.storage.onChanged.addListener(changed);
     chrome.storage.local.get('followJob').then(saved=>{if(disposed)return;job=saved.followJob||null;if(job?.interval)$('follow-interval').value=job.interval;render();onChange();});render();
-    return {dispose(){disposed=true;chrome.storage.onChanged.removeListener(changed);},get running(){return !!job?.running;}};
+    const progressTimer=setInterval(render,1000);
+    return {dispose(){clearInterval(progressTimer);disposed=true;chrome.storage.onChanged.removeListener(changed);},get running(){return !!job?.running;}};
   }};
 })();

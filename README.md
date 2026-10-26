@@ -8,7 +8,7 @@ If Tweet Sweep helped you, please consider [supporting development and maintenan
 
 ## Follow (experimental)
 
-Open your own profile or one of your posts, then choose **Follow** in the panel. Set the interval (default 60 seconds), check the acknowledgment and start. A dedicated X tab collects your loaded posts, scans their liker lists and begins following as soon as people are found. Between follows it scans more posts; the interval applies to follows, not each post scan. Existing follows and requests are skipped. The queue stays in extension local storage; use **Start / resume** after stopping, or **New queue** to scan again. Keep the dedicated tab open. Restrictions, verification prompts and ambiguous results stop the job; intervals do not guarantee avoiding limits or compliance with X rules. Automated proactive following is prohibited by [X's rules](https://help.x.com/en/rules-and-policies/x-rules-and-best-practices). This feature has fixture tests only, and has not been verified on live X.
+Open your own profile or one of your posts, then choose **Follow** in the panel. Set the interval (default 60 seconds), check the acknowledgment and start. A dedicated X tab collects your loaded posts, scans their liker lists and begins following as soon as people are found. Between follows it scans more posts; the interval applies to follows, not each post scan. Existing follows and requests are skipped. The queue stays in extension local storage; use **Start / resume** after stopping, or **New queue** to scan again. When the queue empties, it returns to the original source and scans again after 30 seconds, or 5 minutes if no new people were found. It keeps the saved queue and has no three-person or 1,000-person application cap; this does not override X limits. The panel shows collected people and a countdown. Keep the dedicated tab open. Restrictions, verification prompts and ambiguous results stop the job; intervals do not guarantee avoiding limits or compliance with X rules. Automated proactive following is prohibited by [X's rules](https://help.x.com/en/rules-and-policies/x-rules-and-best-practices). This feature has fixture tests only, and has not been verified on live X.
 
 ## Install
 
@@ -49,7 +49,7 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 
 ### フォロー（試験版）
 
-自分のプロフィールか投稿を開き、パネルの「フォロー」→同意チェック→「開始・再開」。専用タブで取得できた人から設定間隔（初期60秒）でフォローします。待ち時間には次の投稿を調べます。投稿の調査ごとに設定間隔を空けることはありません。フォロー・申請済みは飛ばします。リストは保存され、停止後も再開できます。「新しいリスト」で再取得します。専用タブは開いたままにしてください。制限・認証・結果不明時は停止します。時間を空けてもXの規約に適合するわけではありません。全員の取得・動作は保証できず、実際のXでは未検証です。
+自分のプロフィールか投稿を開き、パネルの「フォロー」→同意チェック→「開始・再開」。専用タブで取得できた人から設定間隔（初期60秒）でフォローします。待ち時間には次の投稿を調べます。投稿の調査ごとに設定間隔を空けることはありません。フォロー・申請済みは飛ばします。リストは保存され、停止後も再開できます。「新しいリスト」で再取得します。候補がなくなっても完了にはせず元のページへ戻り、30秒後に再調査します。追加なしの周回は5分後です。収集人数・待ち時間を表示します。3人・1000人という拡張側の上限はありませんが、Xの制限は別です。専用タブは開いたままにしてください。制限・認証・結果不明時は停止します。時間を空けてもXの規約に適合するわけではありません。全員の取得・動作は保証できず、実際のXでは未検証です。
 
 ### 導入
 
