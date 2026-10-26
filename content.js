@@ -51,6 +51,9 @@
   function timelineFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|')+'@'+Math.round(window.scrollY);}
   async function waitFor(fn,timeout=30000,phase='画面応答'){const started=Date.now(),end=started+timeout;let notified=false;while(Date.now()<end){guard();const value=fn();if(value)return value;if(!notified&&Date.now()-started>=7000){notified=true;status('Xの応答を待っています…');}await delay(150)}const error=new Error(phase+'を確認できませんでした。');error.recoverable=true;throw error;}
   async function returnToTop(){let last='',stable=0;for(let i=0;i<50;i++){guard();window.scrollTo(0,0);await delay(300);guard();const fingerprint=timelineFingerprint(),loading=[...document.querySelectorAll('[role="progressbar"]')].some(visible);if(!loading&&Math.abs(window.scrollY)<3&&fingerprint===last)stable++;else stable=0;last=fingerprint;if(i>=6&&stable>=4)return;}throw Error('先頭の一覧が安定しないため停止しました。');}
+  async function settleCurrent(){let last='',stable=0;for(let i=0;i<20;i++){guard();await delay(300);const next=timelineFingerprint();if(next===last)stable++;else stable=0;last=next;if(i>=3&&stable>=3)return;}}
+  function retryable(message){const error=Error(message);error.recoverable=true;return error;}
+  function scanFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|');}
   async function cooldown(ms){for(let remaining=ms;remaining>0;remaining-=250){guard();await delay(Math.min(250,remaining));}}
   async function ensureTop(){while(true){try{await returnToTop();return;}catch(e){guard();status('一覧の読み込みを待っています…');await cooldown(10000);}}}
   async function clearTransientUi(){
@@ -71,15 +74,17 @@
   for(const id of ['all','limit','posts','reposts'])$(id).addEventListener('change',()=>{if(busy)return;$('ack').checked=false;render();});
   $('ack').addEventListener('change',render);
   trusted('stop',()=>{aborted=true;$('stop').disabled=true;status('停止要求を受け付けました。確定済みの削除は取り消せません。');});
-  async function locate(id){let found=records().find(p=>p.id===id);if(found)return found;window.scrollTo(0,0);await delay(900);let last='',stalls=0;while(stalls<12){guard();found=records().find(p=>p.id===id);if(found)return found;const fingerprint=timelineFingerprint();if(fingerprint===last)stalls++;else stalls=0;last=fingerprint;window.scrollBy(0,Math.max(400,innerHeight*.75));await delay(900);}throw Error('候補 '+id+' を再表示できず停止しました。');}
+  async function locate(id){return waitFor(()=>records().find(p=>p.id===id),5000,'投稿の再表示');}
   function menus(){return [...document.querySelectorAll('[role="menu"]')].filter(visible);}
   function hasConfirm(){return visible(document.querySelector('[data-testid="confirmationSheetConfirm"]'));}
   async function deleteOne(candidate,manual){
     guard();if(menus().length||hasConfirm())throw Error('既存のメニューや確認画面を閉じてから再開してください。');
     const current=await locate(candidate.id);guard();
     if(current.kind!==candidate.kind||current.author!==candidate.author)throw Error('投稿の種類が変化したため停止しました。');
-    // Do not move the viewport to a stale virtualized row before opening its menu.
-    await delay(300);guard();if(!current.node.isConnected||record(current.node)?.id!==candidate.id)throw Error('投稿表示が変わったため停止しました。');
+    // Only align the current live row; never return to the profile top per deletion.
+    const rect=current.node.getBoundingClientRect();
+    if(rect.height>0&&(rect.top<90||rect.bottom>innerHeight-40)){window.scrollBy(0,rect.top-110);await settleCurrent();}
+    await delay(300);guard();if(!current.node.isConnected||record(current.node)?.id!==candidate.id)throw retryable('投稿表示が変わったため保留しました。');
     if(candidate.kind==='repost'){
       const undo=current.node.querySelector('[data-testid="unretweet"]');if(!visible(undo))throw Error('リポスト解除ボタンを確認できません。');undo.click();
       const item=await waitFor(()=>{const a=[...document.querySelectorAll('[data-testid="unretweetConfirm"]')].filter(visible);return a.length===1?a[0]:null;},30000,'リポスト解除メニュー');
@@ -89,7 +94,7 @@
       if(current.author!==jobSelf)throw Error('自分の投稿ではないため停止しました。');
       const caret=current.node.querySelector('[data-testid="caret"]');if(!visible(caret))throw Error('投稿メニューを確認できません。');caret.click();
       const item=await waitFor(()=>{const all=menus().flatMap(m=>[...m.querySelectorAll('[role="menuitem"]')]).filter(e=>/^(削除|Delete)$/.test(e.textContent.trim()));return all.length===1?all[0]:null;},30000,'投稿の削除メニュー');
-      guard();if(!current.node.isConnected||record(current.node)?.id!==candidate.id)throw Error('投稿表示が変わったため停止しました。');item.click();
+      guard();if(!current.node.isConnected||record(current.node)?.id!==candidate.id)throw retryable('投稿表示が変わったため保留しました。');item.click();
       const confirm=await waitFor(()=>document.querySelector('[data-testid="confirmationSheetConfirm"]'),30000,'削除確認ボタン');
       const sheet=confirm.closest('[role="alertdialog"], [role="dialog"], [data-testid="sheetDialog"]');
       if(!visible(confirm)||!sheet||!/(ポストを削除|ツイートを削除|Delete (post|Tweet)|Delete this post)/i.test(sheet.textContent))throw Error('投稿削除の確認画面を識別できず停止しました。');
@@ -102,11 +107,45 @@
     if(busy||$('start').disabled||!$('ack').checked||!validPage())return;
     const scope={self:validPage(),page:location.href,limit:$('all').checked?Infinity:Number($('limit').value),posts:$('posts').checked,reposts:$('reposts').checked};
     if((scope.limit!==Infinity&&(!Number.isSafeInteger(scope.limit)||scope.limit<1))||(!scope.posts&&!scope.reposts))return;
-    const manual=false;jobSelf=scope.self;jobLocation=scope.page;aborted=false;setBusy(true);$('progress').value=0;if(scope.limit===Infinity)$('progress').removeAttribute('value');else $('progress').max=scope.limit;let done=0,skipped=0,consecutive=0,last='',stalls=0,retries=0;const attempted=new Set(),completed=new Set(results.filter(r=>r.ok&&r.account===scope.self).map(r=>r.id));
+    const manual=false;jobSelf=scope.self;jobLocation=scope.page;aborted=false;setBusy(true);$('progress').value=0;if(scope.limit===Infinity)$('progress').removeAttribute('value');else $('progress').max=scope.limit;let done=0,skipped=0,consecutive=0,last='',stalls=0,retries=0,exhausted=false;const attempted=new Set(),completed=new Set(results.filter(r=>r.ok&&r.account===scope.self).map(r=>r.id));
     status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');
-    try{await ensureTop();while(done+skipped<scope.limit){guard();const p=records().find(p=>(p.kind==='repost'?scope.reposts:scope.posts)&&!completed.has(p.id)&&!attempted.has(p.id));if(p){attempted.add(p.id);const data=serial(p);archive.set(p.id,data);const entry={...data,account:scope.self,ok:false,state:'pending',startedAt:new Date().toISOString()};results.push(entry);render();status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');try{Object.assign(entry,await deleteOne(p,manual),{state:'deleted'});done++;completed.add(p.id);status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');consecutive=0;await ensureTop();guard();if(scope.limit!==Infinity)$('progress').value=done;stalls=0;last='';retries=0;render();}catch(e){Object.assign(entry,{state:'unconfirmed',error:e.message,at:new Date().toISOString()});guard();if(!e.recoverable)throw e;skipped++;consecutive++;status('未確認の投稿を保留して続行します。未確認 '+totals(scope.self).skipped+' 件');await cooldown(Math.min(120000,5000*2**Math.min(5,consecutive-1)));await clearTransientUi();await ensureTop();stalls=0;last='';retries=0;}await delay(2000);continue;}const fingerprint=timelineFingerprint();stalls=fingerprint===last?stalls+1:0;last=fingerprint;if(stalls>=12){if(retries>=2)break;retries++;stalls=0;status('追加の読み込みを待っています…');window.scrollBy(0,-Math.max(300,innerHeight*.5));await delay(3000);window.scrollBy(0,Math.max(600,innerHeight));await delay(5000);continue;}window.scrollBy(0,Math.max(400,innerHeight*.75));await delay(1100);}status('削除確認 '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件。未確認の投稿は次回再確認してください。');}
+    try{
+      if(!results.some(r=>r.account===scope.self))await ensureTop();else await settleCurrent();
+      while(done+skipped<scope.limit){
+        guard();
+        const p=records().find(p=>(p.kind==='repost'?scope.reposts:scope.posts)&&!completed.has(p.id)&&!attempted.has(p.id));
+        if(p){
+          attempted.add(p.id);const data=serial(p);archive.set(p.id,data);
+          const entry={...data,account:scope.self,ok:false,state:'pending',startedAt:new Date().toISOString()};results.push(entry);render();
+          status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');
+          try{
+            Object.assign(entry,await deleteOne(p,manual),{state:'deleted'});done++;completed.add(p.id);consecutive=0;
+            status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');
+            await settleCurrent();guard();if(scope.limit!==Infinity)$('progress').value=done+skipped;
+            stalls=0;last='';retries=0;render();
+          }catch(e){
+            Object.assign(entry,{state:'unconfirmed',error:e.message,at:new Date().toISOString()});guard();if(!e.recoverable)throw e;
+            skipped++;consecutive++;status('未確認の投稿を保留して続行します。未確認 '+totals(scope.self).skipped+' 件');
+            await cooldown(Math.min(120000,5000*2**Math.min(5,consecutive-1)));await clearTransientUi();await settleCurrent();stalls=0;last='';retries=0;
+          }
+          await delay(2000);continue;
+        }
+        const fingerprint=scanFingerprint();stalls=fingerprint===last?stalls+1:0;last=fingerprint;
+        if(stalls>=12){
+          if(retries>=3){exhausted=true;break;}
+          retries++;stalls=0;status('追加の読み込みを待っています…');
+          // Recover at the current frontier instead of traversing the timeline again.
+          window.scrollBy(0,-Math.max(300,innerHeight*.5));await cooldown(3000);
+          const bottom=Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);if(bottom>innerHeight)window.scrollTo(0,bottom);else window.scrollBy(0,innerHeight);await cooldown(5000*retries);
+          continue;
+        }
+        window.scrollBy(0,Math.max(400,innerHeight*.75));await delay(1100);
+      }
+      const summary='削除確認 '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件。未確認の投稿は次回再確認してください。';
+      status(exhausted?'一覧の読み込みが止まりました。未表示の投稿が残る場合があります。\n'+summary:summary);
+    }
     catch(e){status(e.message+'\n累計の削除確認: '+totals(scope.self).done+' 件。未確認の投稿は削除済みと扱いません。');}
-    finally{$('ack').checked=false;$('progress').max=Math.max(1,done);$('progress').value=done;setBusy(false);}
+    finally{$('ack').checked=false;$('progress').max=Math.max(1,done+skipped+(exhausted?1:0));$('progress').value=done+skipped;setBusy(false);}
   });
   window.addEventListener('beforeunload',e=>{if(busy){aborted=true;e.preventDefault();e.returnValue='';}});
   let lastIdlePage=location.href+'|'+identity();

@@ -28,6 +28,8 @@ No Node.js or Chrome Web Store developer registration needed. Keep the extracted
 
 ## Limits
 
+- Deletion continues near the current row instead of returning to the top after every item. Restarting in the same tab keeps the current position. If loading stalls after retries, the panel reports incomplete loading rather than implying the whole account was cleared.
+
 - Response timeouts hold the current item as unconfirmed and continue with the next item. The same item is not clicked again in that run. Repeated failures trigger increasing waits (up to two minutes). Blocked menus/dialogs pause processing until cleared. Account changes, navigation, explicit Stop and unrecognized destructive dialogs still stop the run. Unconfirmed items remain on X if deletion failed; review them on a later run. JSON remains a simple date/text memo, not a deletion audit.
 
 - Processes only history X actually loads. All mode is not a guarantee of removing the entire account history.
@@ -55,6 +57,8 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 4. Xで自分のプロフィールを開き、拡張アイコンを押します。通常のプロフィールでは「すべて」（`/all`）を標準で開きます。「返信」「メディア」の選択は維持します。
 
 ### 操作
+
+- 削除ごとに先頭へ戻らず、今の位置から続けます。同じタブでの再開も今の位置から。読み込みが止まった場合は未表示の投稿が残る可能性を表示します。
 
 - 同じタブでの再開は件数を累積表示します。件数指定は今回の実行分です。再読み込みで記録と累計は消えます。
 - 全件が初期設定です。チェックを外すと件数を入力できます。返信も含める場合はXの「返信」タブを開きます。

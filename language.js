@@ -1,5 +1,7 @@
 (() => {
   const messages={
+    '一覧の読み込みが止まりました。未表示の投稿が残る場合があります。':'Timeline loading stopped. More posts may remain unloaded.',
+    '投稿表示が変わったため保留しました。':'Held this post because its display changed.',
     '削除':'Delete','フォロー':'Follow','間隔（秒）':'Interval (seconds)',
     'いいねした人を順にフォロー。待ち時間に次の投稿を調べます。':'Follow people who liked your posts; scan more posts between follows.',
     '自分の投稿にいいねした人を順にフォロー。リストは保存されます。':'Follow people who liked your posts. The queue is saved.',
