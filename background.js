@@ -96,7 +96,7 @@ chrome.runtime.onMessage.addListener((message,sender,respond)=>{
     if(job&&job.account!==account)throw Error('別アカウントのリストがあります。「新しいリスト」で作り直してください。');
     if(!job){
       const path=new URL(sender.tab.url).pathname;
-      if(!new RegExp('^/'+account+'(?:/(?:with_replies|media)|/status/[0-9]+)?/?$','i').test(path))throw Error('自分のプロフィールか、自分の投稿を開いてください。');
+      if(!new RegExp('^/'+account+'(?:/(?:all|with_replies|media)|/status/[0-9]+)?/?$','i').test(path))throw Error('自分のプロフィールか、自分の投稿を開いてください。');
       const post=path.match(/\/status\/(\d+)/);
       job={account,source:sender.tab.url,phase:post?'likes':'posts',posts:post?[{id:post[1],url:'https://x.com/'+account+'/status/'+post[1]+'/likes'}]:[],postIndex:0,queue:[]};
     }

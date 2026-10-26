@@ -29,7 +29,7 @@
   const delay=ms=>new Promise(r=>setTimeout(r,ms));
   const visible=e=>!!e&&e.isConnected&&e.getClientRects().length>0;
   function identity(){return C.account(document.querySelector('[data-testid="AppTabBar_Profile_Link"]')?.getAttribute('href')||'');}
-  function validPage(){const self=identity(),route=location.pathname.match(/^\/([A-Za-z0-9_]{1,15})(?:\/(with_replies|media))?\/?$/);return self&&route&&route[1].toLowerCase()===self?self:null;}
+  function validPage(){const self=identity(),route=location.pathname.match(/^\/([A-Za-z0-9_]{1,15})(?:\/(all|with_replies|media))?\/?$/);return self&&route&&route[1].toLowerCase()===self?self:null;}
   function guard(){if(aborted)throw Error('停止しました。');if(location.href!==jobLocation||identity()!==jobSelf||validPage()!==jobSelf)throw Error('ページまたはアカウントが変わったため停止しました。');}
   function totals(self){const latest=new Map(),confirmed=new Set();for(const r of results){if(r.account!==self)continue;latest.set(r.id,r);if(r.ok)confirmed.add(r.id);}return {done:confirmed.size,skipped:[...latest.values()].filter(r=>!confirmed.has(r.id)&&r.state==='unconfirmed').length};}
   function status(s){$('status').textContent=s;}
