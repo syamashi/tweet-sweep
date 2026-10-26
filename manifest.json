@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tweet Sweep — Delete Tweets for X",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "X（旧Twitter）のツイート・ポスト・返信を一括削除し、リポストを解除。全件・件数指定・停止に対応。APIキー不要、保存は任意。",
   "permissions": [
     "activeTab",

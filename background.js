@@ -5,6 +5,23 @@ chrome.action.onClicked.addListener(async tab => {
     return;
   }
   try {
+    const context=await chrome.scripting.executeScript({target:{tabId:tab.id},func:()=>({profile:document.querySelector('[data-testid="AppTabBar_Profile_Link"]')?.getAttribute('href'),panelOpen:!!globalThis.__postClear})});
+    const own=context[0]?.result;
+    const self=own?.profile?.match(/^\/([\w]{1,15})\/?$/)?.[1]?.toLowerCase();
+    const destination=new URL(tab.url);
+    // Never navigate an existing panel: its deletion memo may still be in memory.
+    if(!own?.panelOpen&&self&&new RegExp('^/'+self+'/?$','i').test(destination.pathname)){
+      destination.pathname='/'+self+'/all';destination.search='';destination.hash='';
+      await chrome.tabs.update(tab.id,{url:destination.href});
+      let loaded=false;
+      for(let i=0;i<60;i++){
+        const current=await chrome.tabs.get(tab.id);
+        if((current.pendingUrl&&current.pendingUrl!==destination.href)||(current.url!==destination.href&&current.url!==tab.url))throw Error('ページが移動されました。');
+        if(current.url===destination.href&&current.status==='complete'){loaded=true;break;}
+        await new Promise(resolve=>setTimeout(resolve,500));
+      }
+      if(!loaded)throw Error('一覧の読み込みを確認できません。');
+    }
     await chrome.scripting.executeScript({target:{tabId:tab.id},files:['core.js','language.js','follow.js','content.js']});
     await chrome.action.setBadgeText({tabId:tab.id,text:''});
   } catch {
@@ -98,7 +115,8 @@ chrome.runtime.onMessage.addListener((message,sender,respond)=>{
       const path=new URL(sender.tab.url).pathname;
       if(!new RegExp('^/'+account+'(?:/(?:all|with_replies|media)|/status/[0-9]+)?/?$','i').test(path))throw Error('自分のプロフィールか、自分の投稿を開いてください。');
       const post=path.match(/\/status\/(\d+)/);
-      job={account,source:sender.tab.url,phase:post?'likes':'posts',posts:post?[{id:post[1],url:'https://x.com/'+account+'/status/'+post[1]+'/likes'}]:[],postIndex:0,queue:[]};
+      const source=new RegExp('^/'+account+'/?$','i').test(path)?'https://x.com/'+account+'/all':sender.tab.url;
+      job={account,source,phase:post?'likes':'posts',posts:post?[{id:post[1],url:'https://x.com/'+account+'/status/'+post[1]+'/likes'}]:[],postIndex:0,queue:[]};
     }
     job.inFlight=false;job.interval=interval;job.token=crypto.randomUUID();job.running=true;job.message='開始します…';job.nextAt=Date.now();
     // Keep the control panel in the original tab; navigation happens in a separate tab.

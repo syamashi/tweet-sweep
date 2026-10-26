@@ -15,7 +15,7 @@ Open your own profile or one of your posts, then choose **Follow** in the panel.
 1. Download the release ZIP and extract it.
 2. Open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**.
 3. Select the extracted folder containing `manifest.json`.
-4. Open your own X profile and click the extension icon.
+4. Open your own X profile and click the extension icon. The default profile opens **All** (`/all`). Explicit Replies / Media tabs are preserved.
 
 No Node.js or Chrome Web Store developer registration needed. Keep the extracted folder in place. Reload the extension and X tab after updating.
 
@@ -52,7 +52,7 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 1. ReleasesのZIPを展開します。
 2. Chromeで `chrome://extensions` →「デベロッパーモード」→「パッケージ化されていない拡張機能を読み込む」。
 3. `manifest.json` のあるフォルダを選択します。
-4. Xで自分のプロフィールを開き、拡張アイコンを押します。
+4. Xで自分のプロフィールを開き、拡張アイコンを押します。通常のプロフィールでは「すべて」（`/all`）を標準で開きます。「返信」「メディア」の選択は維持します。
 
 ### 操作
 

@@ -12,7 +12,8 @@ function fixture(){
 (async()=>{
  for(const url of ['https://x.com/tester/all','https://x.com/TeStEr/all/?sort=latest']){const all=fixture();delete all.state.followJob;const response=await all.send({type:'follow-start',interval:60},url);assert.equal(response.error,undefined);assert.equal(response.job.source,url);assert.equal(response.job.phase,'posts');}
  for(const url of ['https://x.com/other/all','https://x.com/tester/all/unknown','https://x.com/tester/followers']){const other=fixture();delete other.state.followJob;const response=await other.send({type:'follow-start',interval:60},url);assert.match(response.error,/自分のプロフィール/);}
- console.log('PASS: follow scan accepts own All timeline and rejects other profiles');
+ const root=fixture();delete root.state.followJob;const rootResponse=await root.send({type:'follow-start',interval:60});assert.equal(rootResponse.job.source,'https://x.com/tester/all');
+ console.log('PASS: follow scan defaults to All, accepts own All timeline and rejects other profiles');
  let f=fixture();await f.tick();assert.equal(f.state.followJob.queue.length,1);assert.equal(f.state.followJob.postIndex,1);assert.equal(f.state.followJob.inFlight,false);assert.ok(f.state.followJob.nextAt<Date.now()+2000);
  f.state.followJob.nextAt=0;f.result={handle:'friend',state:'followed'};await f.tick();assert.equal(f.state.followJob.queue[0].state,'followed');assert.equal(f.tabs.get(5).url,'https://x.com/friend');
  f.state.followJob.nextAt=0;await f.tick();assert.equal(f.state.followJob.running,false);assert.equal(f.state.followJob.message,'完了しました。');
