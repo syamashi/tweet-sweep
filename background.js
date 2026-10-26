@@ -1,3 +1,4 @@
+if(typeof importScripts==='function')importScripts('delete-recovery.js');
 chrome.action.onClicked.addListener(async tab => {
   if (!tab.id || !/^https:\/\/x\.com\//.test(tab.url || '')) {
     await chrome.action.setBadgeText({tabId:tab.id,text:'X'});

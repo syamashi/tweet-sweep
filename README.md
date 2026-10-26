@@ -23,12 +23,12 @@ No Node.js or Chrome Web Store developer registration needed. Keep the extracted
 
 1. Confirm the displayed account and item types. **∞ All** is the default; uncheck it to enter a count. Use X's **Replies** tab to include replies.
 2. Check the acknowledgment, then click **Delete**. There is no preview or second confirmation. Deletion is permanent.
-3. Confirmed counts accumulate across restarts in the same tab; a specified count applies to each run. Reloading clears the in-memory totals. Each post is read, recorded and deleted sequentially before moving to the next. **Stop** stops further operations.
-4. **Save JSON** exports only the original post date and text, after completion, stop or error. Saving is disabled while processing. Export before closing or reloading the tab: records include attempted items even if deletion was not confirmed and are held in memory, not automatically written to disk. Media files are not included.
+3. Confirmed counts accumulate across restarts in the same tab; a specified count applies to each run. The same-tab checkpoint restores totals after reloading. Each post is read, recorded and deleted sequentially before moving to the next. **Stop** stops further operations.
+4. **Save JSON** exports only the original post date and text, after completion, stop or error. Saving is disabled while processing. Export before closing the tab: records include attempted items even if deletion was not confirmed. A local checkpoint is saved before automatic refresh and when a run finishes or stops; no JSON file is written automatically. Media files are not included.
 
 ## Limits
 
-- Deletion continues near the current row instead of returning to the top after every item. Restarting in the same tab keeps the current position. If loading stalls after retries, the panel reports incomplete loading rather than implying the whole account was cleared.
+- Deletion continues near the current row instead of returning to the top after every item. Restarting in the same tab keeps the current position. If loading stalls, the extension saves a local checkpoint, reloads the same timeline and resumes only after verifying the same account and URL. Counts, remaining item limit, categories and JSON records carry over. After two refreshes without confirmed progress it stops. Stop, navigation, tab closure or a browser restart do not authorize auto-resume.
 
 - Response timeouts hold the current item as unconfirmed and continue with the next item. The same item is not clicked again in that run. Repeated failures trigger increasing waits (up to two minutes). Blocked menus/dialogs pause processing until cleared. Account changes, navigation, explicit Stop and unrecognized destructive dialogs still stop the run. Unconfirmed items remain on X if deletion failed; review them on a later run. JSON remains a simple date/text memo, not a deletion audit.
 
@@ -58,13 +58,13 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 
 ### 操作
 
-- 削除ごとに先頭へ戻らず、今の位置から続けます。同じタブでの再開も今の位置から。読み込みが止まった場合は未表示の投稿が残る可能性を表示します。
+- 削除ごとに先頭へ戻らず、今の位置から続けます。同じタブでの再開も今の位置から。読み込みが止まると記録を保存し、同じ一覧を再読み込みして自動再開します。アカウント・URLを確認し、累計・残り件数・対象設定・JSON記録を引き継ぎます。進展なしの再読み込みは2回で停止します。停止・ページ移動・タブ終了・Chrome再起動では勝手に再開しません。
 
-- 同じタブでの再開は件数を累積表示します。件数指定は今回の実行分です。再読み込みで記録と累計は消えます。
+- 同じタブでの再開は件数を累積表示します。件数指定は今回の実行分です。同じタブの保存記録から累計を復元します。
 - 全件が初期設定です。チェックを外すと件数を入力できます。返信も含める場合はXの「返信」タブを開きます。
 - アカウントと対象を確認してチェックを入れ、「削除する」を押します。候補の事前読み込みや二段階の確認はありません。削除は取り消せません。
 - 1件ずつ読み込み、削除前の投稿日時と本文を記録して削除します。JSONにはdateとtextだけを保存します。
-- 「JSONを保存」は終了・停止・エラー後に使えます。処理中は無効です。削除を確認できなかった投稿も、読み取ったメモとして含まれます。記録はタブのメモリに保持します。ファイルへの自動追記ではないため、閉じる・再読み込みの前に保存してください。画像・動画原本は含みません。
+- 「JSONを保存」は終了・停止・エラー後に使えます。処理中は無効です。削除を確認できなかった投稿も、読み取ったメモとして含まれます。再読み込み前と終了・停止時に、記録を拡張内へ自動保存します。JSONファイルへの自動追記ではありません。タブを閉じる前に書き出してください。画像・動画原本は含みません。
 - Xが表示できた範囲だけが対象です。非API自動化に関するXの規則と、アカウント制限のリスクをご確認ください。
 
 ## Development

@@ -7,7 +7,7 @@ async function until(fn){for(let i=0;i<2000;i++){if(fn())return;await pause(5)}t
 function fixture({path='/tester',owner='tester',wrongDialog=false,uiLanguage='ja',preferences={}}={}){
  const dom=new JSDOM('<a data-testid="AppTabBar_Profile_Link" href="/'+owner+'"></a><main></main>',{url:'https://x.com'+path,runScripts:'outside-only',pretendToBeVisual:true});
  const w=dom.window;let panel,deleted=0;
- w.chrome={runtime:{sendMessage:async()=>({job:null})},i18n:{getUILanguage:()=>uiLanguage},storage:{onChanged:{addListener(){},removeListener(){}},local:{get:async()=>({...preferences}),set:async values=>Object.assign(preferences,values)}}};
+ w.chrome={runtime:{sendMessage:message=>message.type==='delete-restore'?{then(fn){fn({});return {catch(){}};}}:Promise.resolve({job:null})},i18n:{getUILanguage:()=>uiLanguage},storage:{onChanged:{addListener(){},removeListener(){}},local:{get:async()=>({...preferences}),set:async values=>Object.assign(preferences,values)}}};
  const attach=w.Element.prototype.attachShadow;w.Element.prototype.attachShadow=function(init){const r=attach.call(this,init);panel=r;return r;};
  w.HTMLElement.prototype.getClientRects=function(){return this.isConnected?[{width:1,height:1}]:[]};
  w.HTMLElement.prototype.scrollIntoView=()=>{};w.scrollTo=()=>{};w.scrollBy=()=>{};

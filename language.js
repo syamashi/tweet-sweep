@@ -1,5 +1,10 @@
 (() => {
   const messages={
+    'JSON保存は任意。読み込み停止時は記録を保存して一覧を読み直します。Xの非API自動化規則をご確認ください。':'JSON export is optional. If loading stalls, records are saved before refreshing the timeline. Review X’s non-API automation rules.',
+    '記録を保存して一覧を読み直します…':'Saving records and refreshing the timeline…',
+    '保存時とアカウント・ページが違うため再開しません。':'Not resumed: the account or page differs from the saved run.',
+    '一覧の再読み込みに失敗しました。記録は保存されています。':'Timeline refresh failed. Your records have been saved.',
+    '記録の自動保存に失敗しました。JSONを保存してください。':'Automatic record saving failed. Please save JSON.',
     '一覧の読み込みが止まりました。未表示の投稿が残る場合があります。':'Timeline loading stopped. More posts may remain unloaded.',
     '投稿表示が変わったため保留しました。':'Held this post because its display changed.',
     '削除':'Delete','フォロー':'Follow','間隔（秒）':'Interval (seconds)',

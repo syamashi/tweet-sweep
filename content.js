@@ -17,14 +17,14 @@
   <label><input id="ack" type="checkbox">このアカウントの投稿を削除します（取り消し不可）</label>
   <div class="row"><button id="start" class="danger" disabled>削除する</button><button id="stop" disabled>停止</button></div>
   <div class="row" style="margin-top:10px"><button id="backup" disabled>JSONを保存</button></div>
-  <progress id="progress" max="1" value="0"></progress><div id="status" role="status">待機中</div><details class="muted"><summary>注意事項</summary>保存は任意。バックグラウンドでも続行しますが、Chromeにより遅くなる場合があります。Xの非API自動化規則をご確認ください。</details></section>`;
+  <progress id="progress" max="1" value="0"></progress><div id="status" role="status">待機中</div><details class="muted"><summary>注意事項</summary>JSON保存は任意。読み込み停止時は記録を保存して一覧を読み直します。Xの非API自動化規則をご確認ください。</details></section>`;
   document.documentElement.append(host);
   const minimize=document.createElement('button');
   minimize.textContent='−';minimize.title='パネルを折りたたむ／開く';
   root.querySelector('header').insertBefore(minimize,root.getElementById('close'));
   minimize.addEventListener('click',e=>{if(!e.isTrusted)return;const section=root.querySelector('section');const collapsed=section.dataset.collapsed!=='true';section.dataset.collapsed=String(collapsed);for(const child of section.children)if(child.tagName!=='HEADER')child.style.display=collapsed?'none':'';minimize.textContent=collapsed?'＋':'−';});
   const $=id=>root.getElementById(id);
-  let follow=null;
+  let follow=null,reloading=false,restoring=true,disposed=false;
   let results=[],archive=new Map(),busy=false,aborted=false,jobLocation='',jobSelf='';
   const delay=ms=>new Promise(r=>setTimeout(r,ms));
   const visible=e=>!!e&&e.isConnected&&e.getClientRects().length>0;
@@ -47,7 +47,7 @@
     return {...parsed,kind,text:primaryText?.textContent||'(本文なし・メディア投稿)',date:ownTime.getAttribute('datetime')||'',node:article};
   }
   function records(){const self=identity();return [...document.querySelectorAll('article[data-testid="tweet"]')].map(article=>record(article,self)).filter(Boolean);}
-  function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=busy||follow?.running||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
+  function render(){const ready=validPage();$('identity').textContent=ready?'対象: @'+ready:'自分のプロフィールを開いてください。';$('backup').disabled=busy||!archive.size;$('start').disabled=restoring||busy||follow?.running||!$('ack').checked||!ready||(!$('posts').checked&&!$('reposts').checked)||(!$('all').checked&&(!Number.isSafeInteger(Number($('limit').value))||Number($('limit').value)<1));$('limit').disabled=busy||$('all').checked;}
   function timelineFingerprint(){return [...document.querySelectorAll('article[data-testid="tweet"] time')].map(t=>t.closest('a[href]')?.getAttribute('href')||'').join('|')+'@'+Math.round(window.scrollY);}
   async function waitFor(fn,timeout=30000,phase='画面応答'){const started=Date.now(),end=started+timeout;let notified=false;while(Date.now()<end){guard();const value=fn();if(value)return value;if(!notified&&Date.now()-started>=7000){notified=true;status('Xの応答を待っています…');}await delay(150)}const error=new Error(phase+'を確認できませんでした。');error.recoverable=true;throw error;}
   async function returnToTop(){let last='',stable=0;for(let i=0;i<50;i++){guard();window.scrollTo(0,0);await delay(300);guard();const fingerprint=timelineFingerprint(),loading=[...document.querySelectorAll('[role="progressbar"]')].some(visible);if(!loading&&Math.abs(window.scrollY)<3&&fingerprint===last)stable++;else stable=0;last=fingerprint;if(i>=6&&stable>=4)return;}throw Error('先頭の一覧が安定しないため停止しました。');}
@@ -73,7 +73,7 @@
   trusted('backup',()=>{if(busy||!archive.size)return;save('tweet-sweep-posts-'+Date.now()+'.json',[...archive.values()].map(({date,text})=>({date,text})));});
   for(const id of ['all','limit','posts','reposts'])$(id).addEventListener('change',()=>{if(busy)return;$('ack').checked=false;render();});
   $('ack').addEventListener('change',render);
-  trusted('stop',()=>{aborted=true;$('stop').disabled=true;status('停止要求を受け付けました。確定済みの削除は取り消せません。');});
+  trusted('stop',()=>{aborted=true;chrome.runtime.sendMessage({type:'delete-cancel'}).catch(()=>{});$('stop').disabled=true;status('停止要求を受け付けました。確定済みの削除は取り消せません。');});
   async function locate(id){return waitFor(()=>records().find(p=>p.id===id),5000,'投稿の再表示');}
   function menus(){return [...document.querySelectorAll('[role="menu"]')].filter(visible);}
   function hasConfirm(){return visible(document.querySelector('[data-testid="confirmationSheetConfirm"]'));}
@@ -103,14 +103,15 @@
     }
     guard();return {id:candidate.id,url:candidate.url,kind:candidate.kind,ok:true,evidence:'画面で対象の消失またはリポスト解除を確認',at:new Date().toISOString()};
   }
-  trusted('start',async()=>{
-    if(busy||$('start').disabled||!$('ack').checked||!validPage())return;
-    const scope={self:validPage(),page:location.href,limit:$('all').checked?Infinity:Number($('limit').value),posts:$('posts').checked,reposts:$('reposts').checked};
+  async function runDeletion(resume=null){
+    if(busy||restoring||!validPage()||follow?.running||(!resume&&($('start').disabled||!$('ack').checked)))return;
+    const scope=resume?{...resume.scope,limit:resume.scope.limit===null?Infinity:resume.scope.limit}:{self:validPage(),page:location.href,limit:$('all').checked?Infinity:Number($('limit').value),posts:$('posts').checked,reposts:$('reposts').checked};
+    if(scope.self!==validPage()||scope.page!==location.href)return;
     if((scope.limit!==Infinity&&(!Number.isSafeInteger(scope.limit)||scope.limit<1))||(!scope.posts&&!scope.reposts))return;
-    const manual=false;jobSelf=scope.self;jobLocation=scope.page;aborted=false;setBusy(true);$('progress').value=0;if(scope.limit===Infinity)$('progress').removeAttribute('value');else $('progress').max=scope.limit;let done=0,skipped=0,consecutive=0,last='',stalls=0,retries=0,exhausted=false;const attempted=new Set(),completed=new Set(results.filter(r=>r.ok&&r.account===scope.self).map(r=>r.id));
+    const manual=false;jobSelf=scope.self;jobLocation=scope.page;aborted=false;setBusy(true);$('progress').value=0;if(scope.limit===Infinity)$('progress').removeAttribute('value');else $('progress').max=scope.limit;let done=0,skipped=0,consecutive=0,last='',stalls=0,retries=0,exhausted=false;const attempted=new Set(resume?.attempted||[]),completed=new Set(results.filter(r=>r.ok&&r.account===scope.self).map(r=>r.id));
     status('順次削除中: '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件');
     try{
-      if(!results.some(r=>r.account===scope.self))await ensureTop();else await settleCurrent();
+      if(resume||!results.some(r=>r.account===scope.self))await ensureTop();else await settleCurrent();
       while(done+skipped<scope.limit){
         guard();
         const p=records().find(p=>(p.kind==='repost'?scope.reposts:scope.posts)&&!completed.has(p.id)&&!attempted.has(p.id));
@@ -141,17 +142,50 @@
         }
         window.scrollBy(0,Math.max(400,innerHeight*.75));await delay(1100);
       }
+      if(exhausted){
+        const refreshes=done>0?0:(resume?.refreshes||0);
+        if(refreshes<2){
+          await clearTransientUi();guard();status('記録を保存して一覧を読み直します…');
+          reloading=true;
+          const response=await chrome.runtime.sendMessage({type:'delete-checkpoint',checkpoint:snapshot(refreshes+1)});
+          if(response?.error)throw Error(response.error);
+          if(response?.reloading)return;
+          reloading=false;
+        }
+      }
       const summary='削除確認 '+totals(scope.self).done+' 件・未確認 '+totals(scope.self).skipped+' 件。未確認の投稿は次回再確認してください。';
       status(exhausted?'一覧の読み込みが止まりました。未表示の投稿が残る場合があります。\n'+summary:summary);
     }
-    catch(e){status(e.message+'\n累計の削除確認: '+totals(scope.self).done+' 件。未確認の投稿は削除済みと扱いません。');}
-    finally{$('ack').checked=false;$('progress').max=Math.max(1,done+skipped+(exhausted?1:0));$('progress').value=done+skipped;setBusy(false);}
-  });
-  window.addEventListener('beforeunload',e=>{if(busy){aborted=true;e.preventDefault();e.returnValue='';}});
+    catch(e){reloading=false;status(e.message+'\n累計の削除確認: '+totals(scope.self).done+' 件。未確認の投稿は削除済みと扱いません。');}
+    finally{
+      if(!reloading){
+        try{const saved=await chrome.runtime.sendMessage({type:'delete-save',checkpoint:snapshot(0)});if(saved?.error)throw Error(saved.error);}catch{if(!disposed)status('記録の自動保存に失敗しました。JSONを保存してください。\n'+$('status').textContent);}
+        if(!disposed){$('ack').checked=false;$('progress').max=Math.max(1,done+skipped+(exhausted?1:0));$('progress').value=done+skipped;setBusy(false);}
+      }
+    }
+    function snapshot(refreshes){const owned=results.filter(r=>r.account===scope.self),ids=new Set(owned.map(r=>r.id));return {scope:{...scope,limit:scope.limit===Infinity?null:Math.max(0,scope.limit-done-skipped)},results:owned.map(({id,account,ok,state})=>({id,account,ok,state})),archive:[...archive.entries()].filter(([id])=>ids.has(id)).map(([id,{date,text}])=>[id,{date,text}]),attempted:[...attempted].filter(id=>!completed.has(id)),refreshes};}
+  }
+  trusted('start',()=>runDeletion());
+  window.addEventListener('beforeunload',e=>{if(busy&&!reloading){aborted=true;e.preventDefault();e.returnValue='';}});
   let lastIdlePage=location.href+'|'+identity();
   const timer=setInterval(()=>{if(busy&&(location.href!==jobLocation||identity()!==jobSelf)){aborted=true;status('ページまたはアカウントの変更を検出しました。停止します。');}if(!busy){const next=location.href+'|'+identity();if(next!==lastIdlePage){lastIdlePage=next;$('ack').checked=false;render();}}},1000);
   render();
   follow=globalThis.TweetSweepFollow?.mount(root,{isDeleting:()=>busy,onChange:()=>render()});
   const language=globalThis.PostClearLanguage.mount(root);
-  globalThis.__postClear={toggle(){host.hidden=!host.hidden;},dispose(){aborted=true;clearInterval(timer);language.dispose();follow?.dispose();host.remove();}};
+  globalThis.__postClear={reloadFailed(){reloading=false;aborted=true;status('一覧の再読み込みに失敗しました。記録は保存されています。');setBusy(false);},toggle(){host.hidden=!host.hidden;},dispose(){disposed=true;aborted=true;clearInterval(timer);language.dispose();follow?.dispose();host.remove();}};
+  chrome.runtime.sendMessage({type:'delete-restore'}).then(async response=>{
+    if(disposed)return;
+    const checkpoint=response?.checkpoint;
+    if(!checkpoint){restoring=false;render();return;}
+    for(let i=0;i<100&&!identity();i++){await delay(300);if(disposed)return;}
+    if(validPage()!==checkpoint.scope.self||location.href!==checkpoint.scope.page){restoring=false;status('保存時とアカウント・ページが違うため再開しません。');render();return;}
+    results=checkpoint.results||[];archive=new Map(checkpoint.archive||[]);
+    $('all').checked=checkpoint.scope.limit===null;$('limit').value=checkpoint.scope.limit||20;
+    $('posts').checked=checkpoint.scope.posts;$('reposts').checked=checkpoint.scope.reposts;
+    restoring=false;render();
+    status('削除確認 '+totals(checkpoint.scope.self).done+' 件・未確認 '+totals(checkpoint.scope.self).skipped+' 件。未確認の投稿は次回再確認してください。');
+    if(response.auto&&(checkpoint.scope.limit===null||checkpoint.scope.limit>0)){
+      $('ack').checked=true;render();await runDeletion(checkpoint);
+    }
+  }).catch(()=>{if(!disposed){restoring=false;render();}});
 })();
