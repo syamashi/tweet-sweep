@@ -8,18 +8,45 @@ globalThis.TweetSweepFollowStep=async function(job){
   function blocked(){return [...document.querySelectorAll('[role="alert"],[data-testid="toast"],[role="dialog"]')].filter(visible).some(e=>/rate limit|following limit|unable to follow|temporarily restricted|verify your|unusual activity|不審な|制限|認証|フォローできません|しばらくして/i.test(e.textContent));}
   for(let i=0;i<60&&!account();i++)await sleep(500);
   await guard();if(blocked())throw Error('Xの制限・確認画面を検出しました。');
+  const cellHandle=cell=>[...cell.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')?.match(/^\/([\w]{1,15})\/?$/)?.[1]?.toLowerCase()).find(Boolean);
+  const likesRoute=()=>new RegExp('^/'+job.account+'/status/[0-9]+/likes/?$','i').test(location.pathname);
+  function likerCells(){
+    if(!likesRoute())return [];
+    const main=document.querySelector('main [data-testid="primaryColumn"]')||document.querySelector('main');
+    let timeline=[...document.querySelectorAll('main section')].find(section=>{
+      const label=section.getAttribute('aria-label')||section.getAttribute('aria-labelledby')?.split(/\s+/).map(id=>document.getElementById(id)?.textContent||'').join(' ')||'';
+      return visible(section)&&/liked by|likes|いいね/i.test(label);
+    });
+    const selected=[...main?.querySelectorAll('[role="tab"][aria-selected="true"]')||[]].some(tab=>/^(Likes|いいね)$/i.test(tab.textContent.trim()));
+    const activity=[...main?.querySelectorAll('h1,h2,[role="heading"]')||[]].some(e=>/^(Post activity|ポストアクティビティ|ポストのアクティビティ)$/i.test(e.textContent.trim()));
+    if(!timeline&&selected&&activity)timeline=main;
+    return [...timeline?.querySelectorAll('[data-testid="UserCell"]')||[]].filter(cell=>{
+      const section=cell.closest('section'),label=section?.getAttribute('aria-label')||section?.getAttribute('aria-labelledby')?.split(/\s+/).map(id=>document.getElementById(id)?.textContent||'').join(' ')||'';
+      return visible(cell)&&!cell.closest('aside,[data-testid="sidebarColumn"]')&&!/who to follow|you might like|おすすめ|関連するアカウント/i.test(label);
+    });
+  }
+  const followButtons=scope=>[...scope.querySelectorAll('[data-testid$="-unfollow"],[data-testid$="-follow"],[data-testid$="-pending"]')].filter(visible);
+  const existing=button=>/-(unfollow|pending)$/.test(button?.getAttribute('data-testid')||'')||/^(Following|Requested|Pending|フォロー中|リクエスト済み|申請済み)$/i.test(button?.textContent.trim()||'');
   if(job.phase==='follow'){
-    const handle=job.queue.find(p=>p.state==='pending')?.handle;
-    if(!handle||location.pathname.toLowerCase()!=='/'+handle)throw Error('対象プロフィールを確認できません。');
+    let handle=job.followTarget||job.queue.find(p=>p.state==='pending')?.handle;
+    const onList=likesRoute(),pending=new Set(job.queue.filter(p=>p.state==='pending').map(p=>p.handle));
+    const chooseVisible=()=>{const cell=likerCells().find(row=>pending.has(cellHandle(row)));if(cell)handle=cellHandle(cell);};
+    if(onList)chooseVisible();
+    if(!handle||(!onList&&location.pathname.toLowerCase()!=='/'+handle))throw Error('対象プロフィールを確認できません。');
+    const findRow=()=>likerCells().find(cell=>cellHandle(cell)===handle);
+    const findButton=()=>onList?(findRow()?followButtons(findRow())[0]:null):followButtons(document.querySelector('main')||document).find(e=>!e.closest('[data-testid="UserCell"],aside,article'));
     let button;
-    for(let i=0;i<40;i++){await guard();button=[...document.querySelectorAll('main [data-testid$="-unfollow"],main [data-testid$="-follow"],main [data-testid$="-pending"]')].find(e=>visible(e)&&!e.closest('[data-testid="UserCell"],aside,article'));if(button)break;if(blocked())throw Error('Xの制限・確認画面を検出しました。');await sleep(500);}
-    if(!button)throw Error('プロフィールのフォローボタンが見つかりません。');
-    const id=button.getAttribute('data-testid');
-    if(id.endsWith('-unfollow')||id.endsWith('-pending')||/Pending|リクエスト済み|申請済み/i.test(button.textContent))return {handle,state:'existing'};
-    if(!/^(Follow|フォロー|フォローする)$/i.test(button.textContent.trim()))throw Error('フォローボタンを識別できません。');
-    await guard();button.click();
-    for(let i=0;i<60;i++){await guard();if(blocked())throw Error('Xの制限・確認画面を検出しました。');const confirmed=document.querySelector('main [data-testid="'+id.replace(/-follow$/,'-unfollow')+'"],main [data-testid="'+id.replace(/-follow$/,'-pending')+'"]');if(visible(confirmed)||/Pending|リクエスト済み|申請済み/i.test(button.textContent))return {handle,state:'followed'};await sleep(500);}
-    // Never automatically click again when the outcome is ambiguous.
+    for(let i=0;i<(onList?8:40);i++){await guard();if(onList){if(i===1)window.scrollTo(0,0);chooseVisible();}button=findButton();if(button)break;if(blocked())throw Error('Xの制限・確認画面を検出しました。');await sleep(onList?250:500);}
+    if(!button){if(onList)return {handle,state:'locate-profile'};throw Error('プロフィールのフォローボタンが見つかりません。');}
+    if(existing(button))return {handle,state:'existing'};
+    await guard();
+    // Re-resolve the exact handle immediately before clicking a virtualized row.
+    button=findButton();
+    if(!button)throw Error('対象の表示が変わりました。');
+    if(existing(button))return {handle,state:'existing'};
+    if(!/-follow$/.test(button.getAttribute('data-testid')||'')||!/^(Follow|フォロー|フォローする)$/i.test(button.textContent.trim())||button.disabled||button.getAttribute('aria-disabled')==='true')throw Error('フォローボタンを識別できません。');
+    button.click();
+    for(let i=0;i<60;i++){await guard();if(blocked())throw Error('Xの制限・確認画面を検出しました。');const confirmed=findButton();if(confirmed&&existing(confirmed))return {handle,state:'followed'};await sleep(500);}
     throw Error('フォロー結果を確認できません。Xで確認してから再開してください。');
   }
   const found=new Map();let last='',stalls=0,retries=0,scanned=0;
@@ -39,23 +66,10 @@ globalThis.TweetSweepFollowStep=async function(job){
         if(match&&match[1].toLowerCase()===job.account)found.set(match[2],{id:match[2],url:'https://x.com/'+job.account+'/status/'+match[2]+'/likes'});
       }
     }else{
-      // Support both the legacy liker timeline and Post activity > Likes.
-      const main=document.querySelector('main [data-testid="primaryColumn"]')||document.querySelector('main');
-      let timeline=[...document.querySelectorAll('main section')].find(section=>{
-        const label=section.getAttribute('aria-label')||section.getAttribute('aria-labelledby')?.split(/\s+/).map(id=>document.getElementById(id)?.textContent||'').join(' ')||'';
-        return /liked by|likes|いいね/i.test(label);
-      });
-      const selected=[...main?.querySelectorAll('[role="tab"][aria-selected="true"]')||[]].find(tab=>/^(Likes|いいね)$/i.test(tab.textContent.trim()));
-      const activity=[...main?.querySelectorAll('h1,h2,[role="heading"]')||[]].some(e=>/^(Post activity|ポストアクティビティ|ポストのアクティビティ)$/i.test(e.textContent.trim()));
-      const route=new RegExp('^/'+job.account+'/status/[0-9]+/likes/?$','i').test(location.pathname);
-      if(!timeline&&selected&&activity&&route)timeline=main;
-      for(const cell of timeline?.querySelectorAll('[data-testid="UserCell"]')||[]){
-        if(cell.closest('aside,[data-testid="sidebarColumn"]'))continue;
-        const section=cell.closest('section');const label=section?.getAttribute('aria-label')||'';
-        if(/who to follow|you might like|おすすめ|関連するアカウント/i.test(label))continue;
-        const handle=[...cell.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')?.match(/^\/([\w]{1,15})\/?$/)?.[1]?.toLowerCase()).find(Boolean);
+      for(const cell of likerCells()){
+        const handle=cellHandle(cell);
         if(handle)visibleIds.push(handle);
-        if(handle&&handle!==job.account)found.set(handle,{handle,state:cell.querySelector('[data-testid$="-unfollow"],[data-testid$="-pending"]')?'existing':'pending'});
+        if(handle&&handle!==job.account)found.set(handle,{handle,state:followButtons(cell).some(existing)?'existing':'pending',sourceUrl:originalLocation});
       }
     }
     const fingerprint=found.size+'|'+visibleIds.join('|');

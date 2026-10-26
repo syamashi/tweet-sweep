@@ -38,6 +38,7 @@ const loadFollow=async()=>(await chrome.storage.local.get('followJob')).followJo
 function withFollowWrite(write){const task=followWrites.then(write);followWrites=task.catch(()=>{});return task;}
 async function storeFollow(job,force=false){return withFollowWrite(async()=>{const current=await loadFollow();if(!force&&(!current||current.token!==job.token||(!current.running&&job.running)))return false;await chrome.storage.local.set({followJob:job});return true;});}
 async function scheduleFollow(job,ms){job.nextAt=Date.now()+ms;if(await storeFollow(job))await chrome.alarms.create(FOLLOW_ALARM,{when:job.nextAt});}
+function ownLikesUrl(url,account){try{const parsed=new URL(url);return parsed.origin==='https://x.com'&&new RegExp('^/'+account+'/status/[0-9]+/likes/?$','i').test(parsed.pathname);}catch{return false;}}
 async function rescanFollow(job){
   const source=new URL(job.source);
   if(source.origin!=='https://x.com'||!new RegExp('^/'+job.account+'(?:/(?:all|with_replies|media)|/status/[0-9]+)?/?$','i').test(source.pathname))throw Error('元の調査ページを確認できません。');
@@ -69,13 +70,18 @@ async function followTick(){
     job.inFlight=true;job.message=job.phase==='posts'?'投稿を調査中…':job.phase==='likes'?'いいねした人を取得中: '+(job.postIndex+1)+' / '+job.posts.length+' 投稿':'フォローを確認中…';job.nextAt=Date.now()+180000;if(!await storeFollow(job))return;await chrome.alarms.create(FOLLOW_ALARM,{when:job.nextAt});
     const tab=await chrome.tabs.get(job.tabId);
     if(!/^https:\/\/x\.com\//.test(tab.url||''))throw Error('専用のXタブが移動されました。');
-    let url;
+    let url,followTarget,followOnList=false;const previousNextFollowAt=job.nextFollowAt||0;
     if(job.phase==='posts')url=job.source;
     else if(job.phase==='likes')url=job.posts[job.postIndex].url;
     if(job.phase==='follow'){
-      const next=job.queue.find(p=>p.state==='pending');
+      const pending=job.queue.filter(p=>p.state==='pending');
+      const next=pending.find(p=>!p.profileFallback&&p.sourceUrl===tab.url)||pending[0];
       if(!next){await rescanFollow(job);return;}
-      url='https://x.com/'+next.handle;
+      followTarget=next.handle;
+      job.followTarget=followTarget;
+      const list=next.sourceUrl||(ownLikesUrl(tab.url,job.account)?tab.url:null);
+      url=!next.profileFallback&&ownLikesUrl(list,job.account)?list:'https://x.com/'+next.handle;
+      followOnList=ownLikesUrl(url,job.account);
     }
     if(tab.url!==url)await chrome.tabs.update(job.tabId,{url});
     let loaded=false;
@@ -102,12 +108,14 @@ async function followTick(){
       if(!job.posts.length){await rescanFollow(job);return;}
       job.message='投稿 '+job.posts.length+' 件を取得しました。';
     }else if(job.phase==='likes'){
-      const known=new Set(job.queue.map(p=>p.handle));for(const person of result.items)if(!known.has(person.handle)){known.add(person.handle);job.queue.push(person);}
+      const known=new Map(job.queue.map(p=>[p.handle,p]));for(const person of result.items){const saved=known.get(person.handle);if(!saved){known.set(person.handle,person);job.queue.push(person);}else if(saved.state==='pending'){if(person.state==='existing')saved.state='existing';if(ownLikesUrl(person.sourceUrl,job.account)){saved.sourceUrl=person.sourceUrl;saved.profileFallback=false;}}}
       job.postIndex++;job.message='いいねした人を取得中: '+job.postIndex+' / '+job.posts.length+' 投稿';
     }else{
-      job.nextFollowAt=Date.now()+job.interval*1000;
+      if((!followOnList&&result.handle!==followTarget)||!job.queue.some(p=>p.handle===result.handle&&p.state==='pending')||!['followed','existing','locate-profile'].includes(result.state))throw Error('フォロー対象の処理結果が一致しません。');
+      job.nextFollowAt=result.state==='followed'?Date.now()+job.interval*1000:previousNextFollowAt;
       const person=job.queue.find(p=>p.handle===result.handle);if(person)person.state=result.state;
-      job.message='@'+result.handle+(result.state==='existing'?' はフォロー・申請済み':' をフォローしました');
+      if(result.state==='locate-profile'){person.state='pending';person.profileFallback=true;job.message='一覧に対象がないためプロフィールを確認します…';}
+      else job.message='@'+result.handle+(result.state==='existing'?' はフォロー・申請済み':' をフォローしました');
     }
     job.inFlight=false;await scheduleFollow(job,1000);
   }catch(e){

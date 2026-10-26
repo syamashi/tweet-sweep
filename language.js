@@ -1,5 +1,6 @@
 (() => {
   const messages={
+    '一覧に対象がないためプロフィールを確認します…':'The person is not in this list; checking their profile…',
     '投稿を調査中…':'Scanning posts…',
     'フォローを確認中…':'Checking follow status…',
     '追加候補を待っています。元のページを再確認します。':'Waiting for more people. The original source will be checked again.',
