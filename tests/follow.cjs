@@ -4,7 +4,7 @@ const {JSDOM}=require('jsdom');
 const worker=fs.readFileSync('follow-worker.js','utf8');
 function fixture(phase='likes',path='/tester/status/1/likes'){
  const dom=new JSDOM('<a data-testid="AppTabBar_Profile_Link" href="/tester"></a><main></main>',{url:'https://x.com'+path,runScripts:'outside-only'});
- const w=dom.window,job={account:'tester',running:true,token:'one',phase,queue:[{handle:'friend',state:'pending'}]};
+ const w=dom.window,job={account:'tester',running:true,token:'one',mode:phase==='follow'?'follow':'collect',phase,queue:[{handle:'friend',state:'pending'}]};
  w.chrome={storage:{local:{get:async()=>({followJob:job})}}};w.scrollTo=()=>{};w.scrollBy=()=>{};w.setTimeout=fn=>setTimeout(fn,0);
  w.HTMLElement.prototype.getClientRects=function(){return this.isConnected?[{}]:[]};w.eval(worker);
  return {w,job,main:w.document.querySelector('main'),close:()=>w.close(),run:()=>w.TweetSweepFollowStep(job)};
@@ -26,5 +26,6 @@ function fixture(phase='likes',path='/tester/status/1/likes'){
  f=fixture('follow','/friend');f.main.innerHTML='<button data-testid="12-follow">Follow</button>';f.job.running=false;await assert.rejects(f.run(),/停止/);f.close();
  f=fixture('follow','/friend');f.main.innerHTML='<button data-testid="12-follow">Follow</button>';let ambiguous=0;f.main.querySelector('button').onclick=()=>ambiguous++;await assert.rejects(f.run(),/結果/);assert.equal(ambiguous,1);f.close();
  f=fixture('follow','/friend');f.w.document.querySelector('a').href='/different';await assert.rejects(f.run(),/アカウント/);f.close();
+ f=fixture('follow','/friend');f.job.mode='collect';f.main.innerHTML='<button data-testid="12-follow">Follow</button>';let accidental=0;f.main.querySelector('button').onclick=()=>accidental++;await assert.rejects(f.run(),/収集モード/);assert.equal(accidental,0);f.close();
  console.log('PASS: liker deduplication, own posts, follow confirmation, existing skip, limits, stop, ambiguous result and account guard');
 })().catch(e=>{console.error(e);process.exitCode=1});

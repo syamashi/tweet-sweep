@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+const context=vm.createContext({URL});vm.runInContext(fs.readFileSync('follow-list.js','utf8'),context);const codec=context.TweetSweepFollowList;
+const sourceUrl='https://x.com/tester/status/1/likes';
+const backup=codec.encode({account:'tester',token:'private',tabId:9,queue:[{handle:'Friend',state:'pending',sourceUrl},{handle:'FRIEND',state:'followed'},{handle:'other',state:'existing',sourceUrl:'https://evil.example/login'},{handle:'tester',state:'pending'}]});
+assert.equal(backup.people.length,2);assert.equal(backup.people[0].state,'followed');assert.equal(backup.people[0].sourceUrl,sourceUrl);assert.equal(backup.people[1].sourceUrl,undefined);assert.equal(backup.token,undefined);assert.equal(backup.tabId,undefined);
+const decoded=codec.decode(JSON.parse(JSON.stringify(backup)));assert.equal(decoded.account,'tester');assert.equal(decoded.people.length,2);
+const merged=codec.merge([{handle:'friend',state:'followed'}],[{handle:'friend',state:'pending'},{handle:'new',state:'pending',sourceUrl}]);assert.equal(merged.length,2);assert.equal(merged[0].state,'followed');assert.equal(merged[1].sourceUrl,sourceUrl);
+assert.throws(()=>codec.decode({format:'other',version:1,account:'tester',people:[]}),/JSON/);
+assert.throws(()=>codec.decode({...backup,people:[{handle:'friend',state:'unknown'}]}),/状態/);
+assert.throws(()=>codec.decode({...backup,people:[{handle:'settings',state:'pending'}]}),/アカウント名/);
+console.log('PASS: portable follow backup format, case-insensitive deduplication, progress preservation and invalid input rejection');

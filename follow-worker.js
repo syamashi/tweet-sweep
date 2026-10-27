@@ -28,6 +28,7 @@ globalThis.TweetSweepFollowStep=async function(job){
   const followButtons=scope=>[...scope.querySelectorAll('[data-testid$="-unfollow"],[data-testid$="-follow"],[data-testid$="-pending"]')].filter(visible);
   const existing=button=>/-(unfollow|pending)$/.test(button?.getAttribute('data-testid')||'')||/^(Following|Requested|Pending|フォロー中|リクエスト済み|申請済み)$/i.test(button?.textContent.trim()||'');
   if(job.phase==='follow'){
+    if(job.mode!=='follow')throw Error('収集モードではフォローしません。');
     let handle=job.followTarget||job.queue.find(p=>p.state==='pending')?.handle;
     const onList=likesRoute(),pending=new Set(job.queue.filter(p=>p.state==='pending').map(p=>p.handle));
     const chooseVisible=()=>{const cell=likerCells().find(row=>pending.has(cellHandle(row)));if(cell)handle=cellHandle(cell);};

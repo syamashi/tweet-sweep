@@ -8,7 +8,12 @@ If Tweet Sweep helped you, please consider [supporting development and maintenan
 
 ## Follow (experimental)
 
-Open your own profile or one of your posts, then choose **Follow** in the panel. Set the interval (default 60 seconds), check the acknowledgment and start. A dedicated X tab collects your loaded posts, scans their liker lists and begins following as soon as people are found. Between follows it scans more posts; the interval applies to follows, not each post scan. Likes-page Follow buttons are used directly when the exact queued handle is present. Following and pending-request buttons are never clicked. A profile is opened only when the list cannot locate the person or when the saved queue has no usable list source. Existing follows and requests are skipped. The queue stays in extension local storage; use **Start / resume** after stopping, or **New queue** to scan again. When the queue empties, it returns to the original source and scans again after 30 seconds, or 5 minutes if no new people were found. It keeps the saved queue and has no three-person or 1,000-person application cap; this does not override X limits. The panel shows collected people and a countdown. Keep the dedicated tab open. Restrictions, verification prompts and ambiguous results stop the job; intervals do not guarantee avoiding limits or compliance with X rules. Automated proactive following is prohibited by [X's rules](https://help.x.com/en/rules-and-policies/x-rules-and-best-practices). This feature has fixture tests only, and has not been verified on live X.
+- **Collect**: open your own profile or post. Collects people who liked your loaded posts into the saved list, without clicking Follow. Existing entries and progress are preserved. Stop and resume collection, or run it again to append more people.
+- **Follow saved list**: acknowledge the action and set an interval (default 60 seconds). Processes only the saved pending people. It does not collect more posts or restart discovery when the list is empty. Uses Likes-page Follow buttons where available; otherwise checks the profile. Following / pending requests are skipped.
+- **Manage list → Export list / Import list**: portable JSON backup. Import merges without duplicates, preserves processed states and never starts a job. The backup must match the logged-in account.
+- Lists survive closed tabs and Chrome restarts. To update, overwrite the **same extracted extension folder**, then reload the existing extension and X tab. Do not uninstall the extension or load a different folder if you want its existing storage. Export a backup before moving folders or profiles. Updates pause active jobs and keep all list entries.
+
+Keep the dedicated X tab open while working. Restrictions, verification prompts and ambiguous results stop the job. Collection covers only history X displays. Automated proactive following is prohibited by [X's rules](https://help.x.com/en/rules-and-policies/x-rules-and-best-practices); intervals do not guarantee compliance or avoiding limits. This feature has fixture tests only, not independent live-X verification.
 
 ## Install
 
@@ -49,7 +54,12 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 
 ### フォロー（試験版）
 
-自分のプロフィールか投稿を開き、パネルの「フォロー」→同意チェック→「開始・再開」。専用タブで取得できた人から設定間隔（初期60秒）でフォローします。待ち時間には次の投稿を調べます。投稿の調査ごとに設定間隔を空けることはありません。Likes一覧で対象を確認できれば、その場のFollowを押します。Following・申請済みは押しません。一覧で対象を確認できない場合だけプロフィールへ移動します。フォロー・申請済みは飛ばします。リストは保存され、停止後も再開できます。「新しいリスト」で再取得します。候補がなくなっても完了にはせず元のページへ戻り、30秒後に再調査します。追加なしの周回は5分後です。収集人数・待ち時間を表示します。3人・1000人という拡張側の上限はありませんが、Xの制限は別です。専用タブは開いたままにしてください。制限・認証・結果不明時は停止します。時間を空けてもXの規約に適合するわけではありません。全員の取得・動作は保証できず、実際のXでは未検証です。
+- **収集する**：自分のプロフィールか投稿で開始。いいねした人を保存します。フォローはしません。既存リストへ重複を除いて追記します。
+- **リストからフォロー**：保存済みの待ちリストだけを設定間隔で処理します。新しい投稿の収集は行いません。Following・申請済みは押しません。
+- **リスト管理 → リストを書き出す／読み込む**：JSONでバックアップ・復元できます。読み込みは重複を除いて追加し、処理済みの状態を維持します。読み込んでも自動開始しません。同じアカウント用のリストのみ使用できます。
+- タブやChromeを閉じてもリストは残ります。更新は**今読み込んでいる同じフォルダに上書きし、既存の拡張を再読み込み**してください。拡張の削除・別フォルダでの新規読み込みでは保存先が変わります。別フォルダや別Chromeプロフィールに移す前にJSONを書き出してください。更新時は実行中の処理だけを止め、リストは保持します。
+
+収集できるのはXが表示した範囲です。処理中は専用タブを開いたままにしてください。制限・認証・結果不明時は停止します。
 
 ### 導入
 
