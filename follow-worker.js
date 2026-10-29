@@ -25,7 +25,7 @@ globalThis.TweetSweepFollowStep=async function(job){
       return visible(cell)&&!cell.closest('aside,[data-testid="sidebarColumn"]')&&!/who to follow|you might like|おすすめ|関連するアカウント/i.test(label);
     });
   }
-  const followButtons=scope=>[...scope.querySelectorAll('[data-testid$="-unfollow"],[data-testid$="-follow"],[data-testid$="-pending"]')].filter(visible);
+  const followButtons=scope=>[...scope.querySelectorAll('[data-testid$="-unfollow"],[data-testid$="-follow"],[data-testid$="-pending"],button,[role="button"]')].filter(e=>visible(e)&&(/-(unfollow|follow|pending)$/.test(e.getAttribute('data-testid')||'')||/^(Following|Requested|Pending|フォロー中|リクエスト済み|申請済み)$/i.test(e.textContent.trim())));
   const existing=button=>/-(unfollow|pending)$/.test(button?.getAttribute('data-testid')||'')||/^(Following|Requested|Pending|フォロー中|リクエスト済み|申請済み)$/i.test(button?.textContent.trim()||'');
   if(job.phase==='follow'){
     if(job.mode!=='follow')throw Error('収集モードではフォローしません。');
