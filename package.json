@@ -1,6 +1,6 @@
 {
   "name": "tweet-sweep-personal-extension",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "private": true,
   "scripts": {
     "test": "node tests/test.cjs && node tests/follow.cjs && node tests/follow-background.cjs && node tests/default-all.cjs && node tests/delete-recovery.cjs && node tests/follow-list.cjs && node tests/follow-ui.cjs"

@@ -39,14 +39,14 @@ globalThis.TweetSweepFollowStep=async function(job){
     const findButton=()=>onList?(findRow()?followButtons(findRow())[0]:null):followButtons(document.querySelector('main')||document).find(e=>!e.closest('[data-testid="UserCell"],aside,article'));
     let button;
     for(let i=0;i<(onList?8:40);i++){await guard();if(onList){if(i===1)window.scrollTo(0,0);chooseVisible();}button=findButton();if(button)break;if(blocked())throw Error('Xの制限・確認画面を検出しました。');await sleep(onList?250:500);}
-    if(!button){if(onList)return {handle,state:'locate-profile'};throw Error('プロフィールのフォローボタンが見つかりません。');}
+    if(!button){if(onList)return {handle,state:'locate-profile'};return {handle,state:'unconfirmed'};}
     if(existing(button))return {handle,state:'existing'};
     await guard();
     // Re-resolve the exact handle immediately before clicking a virtualized row.
     button=findButton();
-    if(!button)throw Error('対象の表示が変わりました。');
+    if(!button)return {handle,state:'unconfirmed'};
     if(existing(button))return {handle,state:'existing'};
-    if(!/-follow$/.test(button.getAttribute('data-testid')||'')||!/^(Follow|フォロー|フォローする)$/i.test(button.textContent.trim())||button.disabled||button.getAttribute('aria-disabled')==='true')throw Error('フォローボタンを識別できません。');
+    if(!/-follow$/.test(button.getAttribute('data-testid')||'')||!/^(Follow|フォロー|フォローする)$/i.test(button.textContent.trim())||button.disabled||button.getAttribute('aria-disabled')==='true')return {handle,state:'unconfirmed'};
     button.click();
     for(let i=0;i<60;i++){await guard();if(blocked())throw Error('Xの制限・確認画面を検出しました。');const confirmed=findButton();if(confirmed&&existing(confirmed))return {handle,state:'followed'};await sleep(500);}
     return {handle,state:'unconfirmed'};
