@@ -13,7 +13,7 @@ If Tweet Sweep helped you, please consider [supporting development and maintenan
 - **Manage list → Export list / Import list**: portable JSON backup. Import merges without duplicates, preserves processed states and never starts a job. The backup must match the logged-in account.
 - Lists survive closed tabs and Chrome restarts. To update, overwrite the **same extracted extension folder**, then reload the existing extension and X tab. Do not uninstall the extension or load a different folder if you want its existing storage. Export a backup before moving folders or profiles. Updates pause active jobs and keep all list entries.
 
-Keep the dedicated X tab open while working. Restrictions, verification prompts and ambiguous results stop the job. Collection covers only history X displays. Automated proactive following is prohibited by [X's rules](https://help.x.com/en/rules-and-policies/x-rules-and-best-practices); intervals do not guarantee compliance or avoiding limits. This feature has fixture tests only, not independent live-X verification.
+Keep the dedicated X tab open while working. Restrictions and verification prompts stop the job. An unconfirmed follow stays on the waiting list and is skipped until the next manual start; other people continue at the configured interval. Collection covers only history X displays. Automated proactive following is prohibited by [X's rules](https://help.x.com/en/rules-and-policies/x-rules-and-best-practices); intervals do not guarantee compliance or avoiding limits. This feature has fixture tests only, not independent live-X verification.
 
 ## Install
 
@@ -59,7 +59,7 @@ X（旧Twitter）のツイート・ポスト・返信を一括削除する個人
 - **リスト管理 → リストを書き出す／読み込む**：JSONでバックアップ・復元できます。読み込みは重複を除いて追加し、処理済みの状態を維持します。読み込んでも自動開始しません。同じアカウント用のリストのみ使用できます。
 - タブやChromeを閉じてもリストは残ります。更新は**今読み込んでいる同じフォルダに上書きし、既存の拡張を再読み込み**してください。拡張の削除・別フォルダでの新規読み込みでは保存先が変わります。別フォルダや別Chromeプロフィールに移す前にJSONを書き出してください。更新時は実行中の処理だけを止め、リストは保持します。
 
-収集できるのはXが表示した範囲です。処理中は専用タブを開いたままにしてください。制限・認証・結果不明時は停止します。
+収集できるのはXが表示した範囲です。処理中は専用タブを開いたままにしてください。制限・認証時は停止します。フォロー結果が未確認の人は待ちリストに残して次へ進み、次回の手動開始で再確認します。
 
 ### 導入
 

@@ -29,8 +29,9 @@ globalThis.TweetSweepFollowStep=async function(job){
   const existing=button=>/-(unfollow|pending)$/.test(button?.getAttribute('data-testid')||'')||/^(Following|Requested|Pending|フォロー中|リクエスト済み|申請済み)$/i.test(button?.textContent.trim()||'');
   if(job.phase==='follow'){
     if(job.mode!=='follow')throw Error('収集モードではフォローしません。');
-    let handle=job.followTarget||job.queue.find(p=>p.state==='pending')?.handle;
-    const onList=likesRoute(),pending=new Set(job.queue.filter(p=>p.state==='pending').map(p=>p.handle));
+    const eligible=job.queue.filter(p=>p.state==='pending'&&!job.deferredHandles?.includes(p.handle));
+    let handle=job.followTarget||eligible[0]?.handle;
+    const onList=likesRoute(),pending=new Set(eligible.map(p=>p.handle));
     const chooseVisible=()=>{const cell=likerCells().find(row=>pending.has(cellHandle(row)));if(cell)handle=cellHandle(cell);};
     if(onList)chooseVisible();
     if(!handle||(!onList&&location.pathname.toLowerCase()!=='/'+handle))throw Error('対象プロフィールを確認できません。');
@@ -48,7 +49,7 @@ globalThis.TweetSweepFollowStep=async function(job){
     if(!/-follow$/.test(button.getAttribute('data-testid')||'')||!/^(Follow|フォロー|フォローする)$/i.test(button.textContent.trim())||button.disabled||button.getAttribute('aria-disabled')==='true')throw Error('フォローボタンを識別できません。');
     button.click();
     for(let i=0;i<60;i++){await guard();if(blocked())throw Error('Xの制限・確認画面を検出しました。');const confirmed=findButton();if(confirmed&&existing(confirmed))return {handle,state:'followed'};await sleep(500);}
-    throw Error('フォロー結果を確認できません。Xで確認してから再開してください。');
+    return {handle,state:'unconfirmed'};
   }
   const found=new Map();let last='',stalls=0,retries=0,scanned=0;
   const deadline=Date.now()+90000;
